@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Racing Dodgio — UX/UI Wireframes</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0d0d1a;
+    color: #fff;
+    min-height: 100vh;
+  }
+
+  /* ── Doc Header ── */
+  .doc-header {
+    background: #13132a;
+    border-bottom: 2px solid #FF3B3B;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .doc-header h1 { font-size: 20px; color: #FF3B3B; letter-spacing: 2px; text-transform: uppercase; }
+  .doc-header span { font-size: 13px; color: #888; }
+
+  /* ── Tab Nav ── */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    padding: 20px 32px 0;
+    border-bottom: 2px solid #222240;
+    background: #0d0d1a;
+  }
+  .tab-btn {
+    padding: 10px 26px;
+    background: #13132a;
+    border: 1px solid #222240;
+    border-bottom: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 6px 6px 0 0;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .tab-btn:hover { background: #1c1c38; color: #fff; }
+  .tab-btn.active { background: #1c1c38; color: #FF3B3B; border-color: #FF3B3B; font-weight: bold; }
+
+  /* ── Variant Bar ── */
+  .variant-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 32px;
+    background: #111126;
+    border-bottom: 1px solid #222240;
+  }
+  .variant-bar .v-label { font-size: 12px; color: #666; letter-spacing: 1px; text-transform: uppercase; margin-right: 4px; }
+  .variant-btn {
+    padding: 5px 18px;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: all 0.18s;
+  }
+  .variant-btn.va { background: #FF3B3B; color: #fff; }
+  .variant-btn.vb { background: #FFD700; color: #111; }
+  .variant-btn.vc { background: #00E5FF; color: #111; }
+  .variant-btn.active { border-color: #fff; transform: scale(1.1); box-shadow: 0 0 12px rgba(255,255,255,0.3); }
+  .variant-desc { font-size: 12px; color: #555; margin-left: 12px; }
+
+  /* ── Screens ── */
+  .screens { padding: 32px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Game Canvas ── */
+  .game-canvas {
+    width: 960px;
+    height: 640px;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto;
+    border: 3px solid #FF3B3B;
+    border-radius: 10px;
+    box-shadow: 0 0 50px rgba(255,59,59,0.25);
+  }
+
+  /* ══════════════════════════════════
+     VARIANT A — Neon Asphalt
+     Primary: #FF3B3B  Accent: #FFD700
+     BG: #0d0d1a  Surface: #13132a
+  ══════════════════════════════════ */
+
+  /* ── Road World Background (Gameplay) ── */
+  .road-world {
+    position: absolute;
+    inset: 0;
+    background: #2d5a1b; /* grass */
+  }
+  /* Road surfaces */
+  .road-world .road-h {
+    position: absolute;
+    width: 100%; height: 140px;
+    top: 250px;
+    background: #3a3a3a;
+  }
+  .road-world .road-v {
+    position: absolute;
+    width: 120px; height: 100%;
+    left: 420px;
+    background: #3a3a3a;
+  }
+  /* Road markings */
+  .road-world .lane-center-h {
+    position: absolute;
+    width: 100%; height: 4px;
+    top: 319px;
+    background: repeating-linear-gradient(to right, #FFD700 0 50px, transparent 50px 100px);
+  }
+  .road-world .lane-center-v {
+    position: absolute;
+    width: 4px; height: 100%;
+    left: 479px;
+    background: repeating-linear-gradient(to bottom, #FFD700 0 50px, transparent 50px 100px);
+  }
+  /* Sidewalk borders */
+  .road-world .curb-h-top {
+    position: absolute;
+    width: 100%; height: 6px;
+    top: 250px;
+    background: #c8b060;
+  }
+  .road-world .curb-h-bot {
+    position: absolute;
+    width: 100%; height: 6px;
+    top: 384px;
+    background: #c8b060;
+  }
+  .road-world .curb-v-left {
+    position: absolute;
+    width: 6px; height: 100%;
+    left: 420px;
+    background: #c8b060;
+  }
+  .road-world .curb-v-right {
+    position: absolute;
+    width: 6px; height: 100%;
+    left: 534px;
+    background: #c8b060;
+  }
+  /* Grass patches */
+  .road-world .grass-patch {
+    position: absolute;
+    border-radius: 4px;
+    background: #235015;
+    opacity: 0.5;
+  }
+  /* Trees */
+  .road-world .tree {
+    position: absolute;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: #1a4010;
+    border: 2px solid #2d6018;
+  }
+
+  /* ── CSS Car (Red) ── */
+  .car-red {
+    position: absolute;
+    width: 28px; height: 48px;
+  }
+  .car-red .car-body {
+    position: absolute;
+    inset: 0;
+    background: #D32F2F;
+    border-radius: 8px 8px 5px 5px;
+    border: 2px solid #B71C1C;
+  }
+  .car-red .car-windshield {
+    position: absolute;
+    top: 8px; left: 4px; right: 4px; height: 12px;
+    background: rgba(150,220,255,0.6);
+    border-radius: 3px;
+  }
+  .car-red .car-hood {
+    position: absolute;
+    bottom: 0; left: 4px; right: 4px; height: 10px;
+    background: #B71C1C;
+    border-radius: 0 0 4px 4px;
+  }
+  .car-red .wheel { position: absolute; width: 7px; height: 10px; background: #222; border-radius: 2px; }
+  .car-red .wheel.fl { top: 6px; left: -4px; }
+  .car-red .wheel.fr { top: 6px; right: -4px; }
+  .car-red .wheel.rl { bottom: 8px; left: -4px; }
+  .car-red .wheel.rr { bottom: 8px; right: -4px; }
+
+  /* ── CSS Jeep ── */
+  .jeep-css {
+    position: absolute;
+    width: 30px; height: 52px;
+  }
+  .jeep-css .jeep-body {
+    position: absolute;
+    inset: 0;
+    background: #4CAF50;
+    border-radius: 6px;
+    border: 2px solid #388E3C;
+  }
+  .jeep-css .jeep-top {
+    position: absolute;
+    top: 6px; left: 3px; right: 3px; height: 18px;
+    background: #388E3C;
+    border-radius: 3px;
+  }
+  .jeep-css .jeep-glass {
+    position: absolute;
+    top: 9px; left: 5px; right: 5px; height: 10px;
+    background: rgba(150,220,255,0.5);
+    border-radius: 2px;
+  }
+  .jeep-css .jwheel { position: absolute; width: 8px; height: 11px; background: #222; border-radius: 2px; }
+  .jeep-css .jwheel.fl { top: 8px; left: -4px; }
+  .jeep-css .jwheel.fr { top: 8px; right: -4px; }
+  .jeep-css .jwheel.rl { bottom: 10px; left: -4px; }
+  .jeep-css .jwheel.rr { bottom: 10px; right: -4px; }
+
+  /* ── CSS Cookie ── */
+  .cookie-css {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #c87941;
+    border: 2px solid #a05a2c;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .cookie-css::after {
+    content: '';
+    position: absolute;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: #7a3d12;
+    top: 4px; left: 7px;
+    box-shadow: 4px 5px 0 #7a3d12, -1px 8px 0 #7a3d12;
+  }
+
+  /* ── CSS Griddy Kid ── */
+  .griddy-css {
+    position: absolute;
+    width: 28px; height: 44px;
+  }
+  .griddy-css .ghead {
+    position: absolute;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: #FDBCB4;
+    top: 0; left: 5px;
+    border: 2px solid #e89a8a;
+  }
+  .griddy-css .gbody {
+    position: absolute;
+    width: 22px; height: 16px;
+    background: #FF9800;
+    border-radius: 4px 4px 2px 2px;
+    top: 16px; left: 3px;
+  }
+  .griddy-css .gleg {
+    position: absolute;
+    width: 8px; height: 10px;
+    background: #1565C0;
+    border-radius: 0 0 3px 3px;
+    bottom: 0;
+  }
+  .griddy-css .gleg.l { left: 3px; }
+  .griddy-css .gleg.r { right: 3px; }
+  .griddy-css .garm {
+    position: absolute;
+    width: 6px; height: 12px;
+    background: #FF9800;
+    border-radius: 3px;
+    top: 18px;
+  }
+  .griddy-css .garm.l { left: -3px; transform: rotate(30deg); }
+  .griddy-css .garm.r { right: -3px; transform: rotate(-30deg); }
+
+  /* ── HUD Overlay ── */
+  .hud-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Speed meter */
+  .hud-speed {
+    position: absolute;
+    bottom: 16px; left: 16px;
+    width: 110px;
+    background: rgba(0,0,0,0.72);
+    border: 1px solid rgba(255,59,59,0.5);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .hud-speed .spd-label {
+    font-size: 9px;
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .hud-speed .spd-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #222;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .hud-speed .spd-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(to right, #FF3B3B, #FF8C00);
+    transition: width 0.3s;
+  }
+  .hud-speed .spd-value {
+    font-size: 20px;
+    font-weight: 900;
+    color: #fff;
+    text-align: right;
+  }
+  .hud-speed .spd-unit { font-size: 10px; color: #888; }
+
+  /* Boost indicator */
+  .hud-boost {
+    position: absolute;
+    bottom: 16px; left: 140px;
+    width: 130px;
+    background: rgba(0,0,0,0.72);
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,200,0,0.3);
+  }
+  .hud-boost .boost-label {
+    font-size: 9px;
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .hud-boost .boost-row {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .hud-boost .boost-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .boost-active .boost-icon { background: #FFD700; color: #111; }
+  .boost-inactive .boost-icon { background: #333; color: #555; }
+  .hud-boost .boost-text { font-size: 12px; font-weight: bold; }
+  .boost-active .boost-text { color: #FFD700; }
+  .boost-inactive .boost-text { color: #444; }
+  .hud-boost .boost-timer {
+    font-size: 9px; color: #888; margin-top: 3px;
+  }
+  .boost-active .boost-timer { color: #FFD700; }
+
+  /* Stun indicator */
+  .hud-stun {
+    position: absolute;
+    bottom: 16px; left: 284px;
+    width: 120px;
+    background: rgba(0,0,0,0.72);
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,100,0,0.3);
+  }
+  .hud-stun .stun-label {
+    font-size: 9px;
+    color: #888;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .stun-active .stun-label { color: #FF6B00; }
+  .hud-stun .stun-row { display: flex; align-items: center; gap: 6px; }
+  .hud-stun .stun-icon {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .stun-active .stun-icon { background: #FF6B00; color: #fff; }
+  .stun-inactive .stun-icon { background: #333; color: #555; }
+  .hud-stun .stun-text { font-size: 12px; font-weight: bold; }
+  .stun-active .stun-text { color: #FF6B00; }
+  .stun-inactive .stun-text { color: #444; }
+
+  /* Cookie counter */
+  .hud-cookies {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: rgba(0,0,0,0.72);
+    border-radius: 10px;
+    padding: 8px 14px;
+    border: 1px solid rgba(200,121,65,0.4);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hud-cookies .ck-icon {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #c87941;
+    border: 1px solid #a05a2c;
+  }
+  .hud-cookies .ck-text { font-size: 13px; font-weight: bold; color: #c87941; }
+  .hud-cookies .ck-label { font-size: 10px; color: #666; }
+
+  /* Jeep counter */
+  .hud-jeeps {
+    position: absolute;
+    top: 16px; right: 160px;
+    background: rgba(0,0,0,0.72);
+    border-radius: 10px;
+    padding: 8px 14px;
+    border: 1px solid rgba(76,175,80,0.4);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hud-jeeps .jp-icon {
+    width: 12px; height: 18px;
+    background: #4CAF50;
+    border-radius: 3px;
+    border: 1px solid #388E3C;
+  }
+  .hud-jeeps .jp-text { font-size: 13px; font-weight: bold; color: #4CAF50; }
+  .hud-jeeps .jp-label { font-size: 10px; color: #666; }
+
+  /* Timer */
+  .hud-timer {
+    position: absolute;
+    top: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.72);
+    border-radius: 10px;
+    padding: 8px 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    text-align: center;
+  }
+  .hud-timer .tm-value { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 2px; }
+  .hud-timer .tm-label { font-size: 9px; color: #666; letter-spacing: 2px; text-transform: uppercase; }
+
+  /* Controls reminder */
+  .hud-controls {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 10px;
+    color: #555;
+    line-height: 1.7;
+  }
+  .hud-controls span { color: #888; }
+
+  /* Griddy dance label */
+  .griddy-label {
+    position: absolute;
+    background: rgba(255,215,0,0.15);
+    border: 1px solid #FFD700;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 10px;
+    color: #FFD700;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  /* ── Overlay / Menu layers ── */
+  .full-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .menu-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.70);
+  }
+  .menu-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* ── Center Panel ── */
+  .center-panel {
+    background: rgba(13,13,26,0.95);
+    border: 1px solid rgba(255,59,59,0.35);
+    border-radius: 16px;
+    padding: 32px 40px;
+    width: 680px;
+    box-shadow: 0 0 60px rgba(255,59,59,0.1);
+  }
+
+  /* ── Game Title ── */
+  .game-title {
+    font-size: 58px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 4px;
+    text-shadow: 4px 4px 0 #FF3B3B, -1px -1px 0 #FF3B3B;
+    text-align: center;
+    line-height: 1;
+  }
+  .game-tagline {
+    font-size: 14px;
+    color: #888;
+    text-align: center;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: #FF3B3B;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(255,59,59,0.4);
+  }
+  .btn-primary:hover { background: #ff5555; transform: translateY(-2px); box-shadow: 0 6px 24px rgba(255,59,59,0.5); }
+
+  .btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: #aaa;
+    border: 1px solid #333;
+    border-radius: 10px;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: #666; color: #fff; }
+
+  /* ── How to Play grid ── */
+  .how-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .how-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .how-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .how-item h4 { font-size: 11px; color: #ccc; margin-bottom: 2px; letter-spacing: 0.5px; }
+  .how-item p { font-size: 11px; color: #666; line-height: 1.4; }
+
+  /* Key badge */
+  .key {
+    display: inline-block;
+    background: #1c1c38;
+    border: 1px solid #444;
+    border-bottom: 3px solid #444;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 10px;
+    color: #ccc;
+    font-family: monospace;
+  }
+
+  /* Section label */
+  .section-line {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; color: #555; letter-spacing: 2px;
+    text-transform: uppercase; margin: 16px 0 12px;
+  }
+  .section-line::before, .section-line::after {
+    content: ''; flex: 1; height: 1px; background: #222;
+  }
+
+  /* ── Car showcase (main menu) ── */
+  .car-showcase {
+    position: relative;
+    width: 80px; height: 120px;
+    margin: 0 auto;
+  }
+  .car-showcase .showcase-car {
+    position: absolute;
+    width: 44px; height: 72px;
+    left: 18px; top: 24px;
+  }
+  .car-showcase .showcase-car .car-body {
+    position: absolute; inset: 0;
+    background: #D32F2F;
+    border-radius: 10px 10px 6px 6px;
+    border: 2px solid #B71C1C;
+  }
+  .car-showcase .showcase-car .car-windshield {
+    position: absolute;
+    top: 10px; left: 6px; right: 6px; height: 18px;
+    background: rgba(150,220,255,0.65);
+    border-radius: 4px;
+  }
+  .car-showcase .showcase-car .car-hood {
+    position: absolute;
+    bottom: 0; left: 6px; right: 6px; height: 14px;
+    background: #B71C1C;
+    border-radius: 0 0 5px 5px;
+  }
+  .car-showcase .showcase-car .wheel { position: absolute; width: 10px; height: 16px; background: #111; border-radius: 3px; border: 1px solid #444; }
+  .car-showcase .showcase-car .wheel.fl { top: 8px; left: -6px; }
+  .car-showcase .showcase-car .wheel.fr { top: 8px; right: -6px; }
+  .car-showcase .showcase-car .wheel.rl { bottom: 12px; left: -6px; }
+  .car-showcase .showcase-car .wheel.rr { bottom: 12px; right: -6px; }
+  .speed-lines {
+    position: absolute;
+    bottom: 0; left: 0; right: 0; height: 30px;
+    display: flex; flex-direction: column; gap: 5px; align-items: center;
+    opacity: 0.4;
+  }
+  .speed-lines span {
+    display: block;
+    height: 2px; border-radius: 1px;
+    background: linear-gradient(to left, #FF3B3B, transparent);
+  }
+
+  /* ── Game Over screen ── */
+  .wipeout-title {
+    font-size: 68px;
+    font-weight: 900;
+    color: #FF3B3B;
+    letter-spacing: 6px;
+    text-shadow: 0 0 30px rgba(255,59,59,0.7), 4px 4px 0 #8B0000;
+    text-align: center;
+    line-height: 1;
+    animation: pulse-red 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse-red {
+    0%, 100% { text-shadow: 0 0 30px rgba(255,59,59,0.7), 4px 4px 0 #8B0000; }
+    50% { text-shadow: 0 0 50px rgba(255,59,59,1), 4px 4px 0 #8B0000; }
+  }
+  .wipeout-sub {
+    font-size: 13px; color: #888;
+    letter-spacing: 3px; text-align: center;
+    text-transform: uppercase;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 8px 0;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .stat-card .st-value { font-size: 30px; font-weight: 900; color: #fff; }
+  .stat-card .st-label { font-size: 10px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; }
+  .stat-card .st-icon { font-size: 16px; margin-bottom: 4px; }
+
+  .rating-banner {
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: center;
+  }
+  .rating-banner .rt-title { font-size: 13px; color: #888; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  .rating-banner .rt-value { font-size: 22px; font-weight: 900; color: #FFD700; letter-spacing: 1px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 4px; }
+  .btn-row .btn-primary { flex: 2; font-size: 15px; }
+  .btn-row .btn-secondary { flex: 1; }
+
+  /* ══════════════════════════════════
+     VARIANT THEMING
+  ══════════════════════════════════ */
+
+  /* ── Variant B — Sunny Arcade (Yellow/Black) ── */
+  body.vb .doc-header { border-bottom-color: #FFD700; }
+  body.vb .doc-header h1 { color: #FFD700; }
+  body.vb .tab-btn.active { color: #FFD700; border-color: #FFD700; }
+  body.vb .game-canvas { border-color: #FFD700; box-shadow: 0 0 50px rgba(255,215,0,0.2); }
+  body.vb .center-panel { border-color: rgba(255,215,0,0.35); box-shadow: 0 0 60px rgba(255,215,0,0.08); }
+  body.vb .game-title { text-shadow: 4px 4px 0 #FFD700, -1px -1px 0 #FFD700; }
+  body.vb .btn-primary { background: #FFD700; color: #111; box-shadow: 0 4px 20px rgba(255,215,0,0.4); }
+  body.vb .btn-primary:hover { background: #ffe340; box-shadow: 0 6px 24px rgba(255,215,0,0.55); }
+  body.vb .hud-speed { border-color: rgba(255,215,0,0.5); }
+  body.vb .hud-speed .spd-bar-fill { background: linear-gradient(to right, #FFD700, #FF8C00); }
+  body.vb .hud-speed .spd-value { color: #FFD700; }
+  body.vb .hud-timer .tm-value { color: #FFD700; }
+  body.vb .wipeout-title { color: #FFD700; text-shadow: 0 0 30px rgba(255,215,0,0.7), 4px 4px 0 #886600; }
+  body.vb .stat-card .st-value { color: #FFD700; }
+  body.vb .rating-banner { background: rgba(255,215,0,0.1); border-color: rgba(255,215,0,0.4); }
+  body.vb .rating-banner .rt-value { color: #FFD700; }
+  body.vb .section-line { color: #664400; }
+  body.vb .section-line::before, body.vb .section-line::after { background: #332200; }
+  body.vb .how-item { border-color: rgba(255,215,0,0.1); }
+  body.vb .hud-cookies { border-color: rgba(255,215,0,0.5); }
+  body.vb .hud-cookies .ck-text { color: #FFD700; }
+
+  /* ── Variant C — Cyan Neon (Cyberpunk-lite) ── */
+  body.vc .doc-header { border-bottom-color: #00E5FF; }
+  body.vc .doc-header h1 { color: #00E5FF; }
+  body.vc .tab-btn.active { color: #00E5FF; border-color: #00E5FF; }
+  body.vc .game-canvas { border-color: #00E5FF; box-shadow: 0 0 50px rgba(0,229,255,0.2); }
+  body.vc .center-panel { border-color: rgba(0,229,255,0.35); box-shadow: 0 0 60px rgba(0,229,255,0.08); }
+  body.vc .game-title { text-shadow: 4px 4px 0 #00E5FF, -1px -1px 0 #00E5FF; }
+  body.vc .btn-primary { background: #00E5FF; color: #000; box-shadow: 0 4px 20px rgba(0,229,255,0.4); }
+  body.vc .btn-primary:hover { background: #33ecff; box-shadow: 0 6px 24px rgba(0,229,255,0.55); }
+  body.vc .hud-speed { border-color: rgba(0,229,255,0.5); }
+  body.vc .hud-speed .spd-bar-fill { background: linear-gradient(to right, #00E5FF, #0066ff); }
+  body.vc .hud-speed .spd-value { color: #00E5FF; }
+  body.vc .hud-timer .tm-value { color: #00E5FF; }
+  body.vc .wipeout-title { color: #00E5FF; text-shadow: 0 0 30px rgba(0,229,255,0.8), 4px 4px 0 #004455; }
+  body.vc .stat-card .st-value { color: #00E5FF; }
+  body.vc .rating-banner { background: rgba(0,229,255,0.06); border-color: rgba(0,229,255,0.35); }
+  body.vc .rating-banner .rt-value { color: #00E5FF; }
+  body.vc .section-line { color: #004455; }
+  body.vc .section-line::before, body.vc .section-line::after { background: #002233; }
+  body.vc .car-red .car-body { background: #0066ff; border-color: #003399; }
+  body.vc .car-red .car-hood { background: #003399; }
+  body.vc .hud-cookies .ck-text { color: #00E5FF; }
+  body.vc .road-world { background: #1a2a1a; }
+  body.vc .road-world .road-h, body.vc .road-world .road-v { background: #111; }
+  body.vc .road-world .lane-center-h, body.vc .road-world .lane-center-v {
+    background: repeating-linear-gradient(to right, #00E5FF 0 50px, transparent 50px 100px);
+  }
+  body.vc .road-world .curb-h-top, body.vc .road-world .curb-h-bot,
+  body.vc .road-world .curb-v-left, body.vc .road-world .curb-v-right { background: #00E5FF44; }
+
+  /* ══════════════════════════════════
+     AUDIT SCREEN STYLES
+  ══════════════════════════════════ */
+  .audit-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .audit-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .audit-nav-item {
+    padding: 10px 16px;
+    background: #13132a;
+    border: 1px solid #222240;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #888;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .audit-nav-item:hover { border-color: #444; color: #ccc; }
+  .audit-nav-item.active { border-color: #FF3B3B; color: #FF3B3B; background: rgba(255,59,59,0.06); }
+  .audit-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-critical { background: #FF3B3B; }
+  .dot-warning { background: #FF8C00; }
+  .dot-good { background: #4CAF50; }
+  .dot-info { background: #00E5FF; }
+
+  .audit-main { display: flex; flex-direction: column; gap: 20px; }
+
+  .audit-section {
+    background: #13132a;
+    border: 1px solid #222240;
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+  .audit-section h2 {
+    font-size: 15px;
+    color: #ccc;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .audit-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .badge-critical { background: rgba(255,59,59,0.2); color: #FF3B3B; border: 1px solid rgba(255,59,59,0.4); }
+  .badge-warning { background: rgba(255,140,0,0.2); color: #FF8C00; border: 1px solid rgba(255,140,0,0.4); }
+  .badge-good { background: rgba(76,175,80,0.2); color: #4CAF50; border: 1px solid rgba(76,175,80,0.4); }
+  .badge-info { background: rgba(0,229,255,0.15); color: #00E5FF; border: 1px solid rgba(0,229,255,0.3); }
+
+  .finding-list { display: flex; flex-direction: column; gap: 8px; }
+  .finding-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .finding-item .fi-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .fi-critical { background: rgba(255,59,59,0.2); color: #FF3B3B; }
+  .fi-warning { background: rgba(255,140,0,0.2); color: #FF8C00; }
+  .fi-good { background: rgba(76,175,80,0.2); color: #4CAF50; }
+  .fi-info { background: rgba(0,229,255,0.15); color: #00E5FF; }
+  .finding-item h4 { font-size: 13px; color: #ccc; margin-bottom: 3px; }
+  .finding-item p { font-size: 12px; color: #666; line-height: 1.5; }
+  .finding-item .fi-tag {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    color: #555;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+
+  .priority-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .priority-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    color: #666;
+    letter-spacing: 1px;
+    font-size: 10px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #222;
+  }
+  .priority-table td {
+    padding: 10px 12px;
+    color: #aaa;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+  .priority-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .p-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  .p-p0 { background: rgba(255,59,59,0.2); color: #FF3B3B; }
+  .p-p1 { background: rgba(255,140,0,0.2); color: #FF8C00; }
+  .p-p2 { background: rgba(255,215,0,0.15); color: #FFD700; }
+  .p-p3 { background: rgba(76,175,80,0.15); color: #4CAF50; }
+
+  /* Color palette swatches */
+  .palette-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .palette-card {
+    border: 1px solid #222240;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .palette-header {
+    padding: 14px 14px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .palette-swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .swatch {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  .swatch span { margin-left: auto; opacity: 0.7; font-family: monospace; }
+
+  .variant-rationale {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .vr-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .vr-card h4 { font-size: 12px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; }
+  .vr-card p { font-size: 11px; color: #666; line-height: 1.5; margin-bottom: 6px; }
+  .vr-card .vr-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+  .vr-card .vr-val { font-size: 11px; color: #888; }
+
+  /* Wireframe ASCII annotation box */
+  .wireframe-notes {
+    background: rgba(0,0,0,0.4);
+    border: 1px dashed #333;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #555;
+    line-height: 1.7;
+    white-space: pre;
+  }
+
+  /* Annotation arrows on HUD */
+  .hud-annotation {
+    position: absolute;
+    background: rgba(255,215,0,0.9);
+    color: #000;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .hud-annotation::after {
+    content: '';
+    position: absolute;
+    border: 4px solid transparent;
+  }
+  .ann-left::after { border-right-color: rgba(255,215,0,0.9); right: 100%; top: 50%; transform: translateY(-50%); }
+  .ann-right::after { border-left-color: rgba(255,215,0,0.9); left: 100%; top: 50%; transform: translateY(-50%); }
+  .ann-down::after { border-top-color: rgba(255,215,0,0.9); top: 100%; left: 50%; transform: translateX(-50%); }
+  .ann-up::after { border-bottom-color: rgba(255,215,0,0.9); bottom: 100%; left: 50%; transform: translateX(-50%); }
+
+</style>
+</head>
+<body>
+
+<!-- ══ DOCUMENT HEADER ══ -->
+<div class="doc-header">
+  <h1>Racing Dodgio &mdash; UX/UI Wireframes</h1>
+  <span>Godot 4.6 &bull; Top-Down Racing &bull; 2026-02-28 &bull; UIUXVisionary</span>
+</div>
+
+<!-- ══ TAB NAVIGATION ══ -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('main-menu', this)">Main Menu</button>
+  <button class="tab-btn" onclick="switchTab('gameplay', this)">Gameplay HUD</button>
+  <button class="tab-btn" onclick="switchTab('game-over', this)">Game Over</button>
+  <button class="tab-btn" onclick="switchTab('audit', this)">UX/UI Audit</button>
+</div>
+
+<!-- ══ VARIANT BAR ══ -->
+<div class="variant-bar">
+  <span class="v-label">Color Variant:</span>
+  <button class="variant-btn va active" onclick="switchVariant('va', this)">A &mdash; Neon Asphalt</button>
+  <button class="variant-btn vb" onclick="switchVariant('vb', this)">B &mdash; Sunny Arcade</button>
+  <button class="variant-btn vc" onclick="switchVariant('vc', this)">C &mdash; Cyan Neon</button>
+  <span class="variant-desc" id="vdesc">Dark red/orange on near-black &mdash; high-contrast arcade energy</span>
+</div>
+
+<!-- ══ SCREENS ══ -->
+<div class="screens">
+
+  <!-- ══════════════ MAIN MENU ══════════════ -->
+  <div id="screen-main-menu" class="screen active">
+    <div class="game-canvas">
+      <!-- World bg -->
+      <div class="road-world">
+        <div class="road-h"></div>
+        <div class="road-v"></div>
+        <div class="lane-center-h"></div>
+        <div class="lane-center-v"></div>
+        <div class="curb-h-top"></div><div class="curb-h-bot"></div>
+        <div class="curb-v-left"></div><div class="curb-v-right"></div>
+        <div class="tree" style="top:40px;left:60px"></div>
+        <div class="tree" style="top:80px;left:200px"></div>
+        <div class="tree" style="top:30px;left:560px"></div>
+        <div class="tree" style="top:100px;left:750px"></div>
+        <div class="tree" style="top:460px;left:90px"></div>
+        <div class="tree" style="top:500px;left:600px"></div>
+        <div class="tree" style="top:530px;left:820px"></div>
+        <div class="grass-patch" style="width:80px;height:50px;top:150px;left:300px"></div>
+        <div class="grass-patch" style="width:60px;height:40px;top:420px;left:680px"></div>
+      </div>
+      <!-- Dark overlay -->
+      <div class="menu-backdrop"></div>
+      <!-- Menu content -->
+      <div class="menu-content" style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+        <!-- Car graphic -->
+        <div class="car-showcase">
+          <div class="showcase-car">
+            <div class="car-body"></div>
+            <div class="car-windshield"></div>
+            <div class="car-hood"></div>
+            <div class="wheel fl"></div>
+            <div class="wheel fr"></div>
+            <div class="wheel rl"></div>
+            <div class="wheel rr"></div>
+          </div>
+          <div class="speed-lines">
+            <span style="width:60px"></span>
+            <span style="width:40px"></span>
+            <span style="width:70px"></span>
+          </div>
+        </div>
+
+        <!-- Title -->
+        <div class="game-title">RACING<br>DODGIO</div>
+        <div class="game-tagline">Dodge &bull; Boost &bull; Do the Griddy</div>
+
+        <!-- Main panel -->
+        <div class="center-panel">
+          <div class="btn-primary" style="margin-bottom:10px;">PLAY</div>
+          <div class="btn-secondary" style="margin-bottom:16px;">HIGH SCORES</div>
+
+          <div class="section-line">How to Play</div>
+          <div class="how-grid">
+            <div class="how-item">
+              <div class="how-icon" style="background:rgba(255,59,59,0.15);color:#FF3B3B;">&#8593;</div>
+              <div>
+                <h4>ACCELERATE</h4>
+                <p><span class="key">Up</span> to go faster &mdash; max speed 10 units</p>
+              </div>
+            </div>
+            <div class="how-item">
+              <div class="how-icon" style="background:rgba(255,59,59,0.15);color:#FF3B3B;">&#8592;&#8594;</div>
+              <div>
+                <h4>STEER</h4>
+                <p><span class="key">Left</span> / <span class="key">Right</span> to rotate</p>
+              </div>
+            </div>
+            <div class="how-item">
+              <div class="how-icon" style="background:rgba(200,121,65,0.2);color:#c87941;">&#11044;</div>
+              <div>
+                <h4>COLLECT COOKIES</h4>
+                <p>5-second speed boost + Griddy dance!</p>
+              </div>
+            </div>
+            <div class="how-item">
+              <div class="how-icon" style="background:rgba(76,175,80,0.15);color:#4CAF50;">&#9645;</div>
+              <div>
+                <h4>DODGE JEEPS</h4>
+                <p>Collide = stunned 2 seconds, speed zeroed</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:#333;letter-spacing:1px;">Built in Godot 4.6 &bull; GDScript</div>
+      </div>
+    </div>
+
+    <!-- ASCII Wireframe annotation -->
+    <div style="max-width:960px;margin:20px auto 0;">
+      <div class="wireframe-notes">MAIN MENU WIREFRAME ANNOTATION
+&#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;
+&#x2502;  [WORLD BG] Road/grass visible behind overlay = depth cue         &#x2502;
+&#x2502;  [CAR CSS]  Top-down red car above title (80x120px hitbox)         &#x2502;
+&#x2502;  [TITLE]    "RACING DODGIO" H1 900w 58px + tagline 14px            &#x2502;
+&#x2502;  [PANEL]    680px wide frosted panel (backdrop-blur equivalent)    &#x2502;
+&#x2502;    [BTN]    PLAY  primary full-width  (accent color)               &#x2502;
+&#x2502;    [BTN]    HIGH SCORES  secondary  ghost style                    &#x2502;
+&#x2502;    [GRID]   2x2 how-to-play grid with key badges                   &#x2502;
+&#x2502;  [FOOTER]   Engine credit 11px #333                                &#x2502;
+&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ GAMEPLAY HUD ══════════════ -->
+  <div id="screen-gameplay" class="screen">
+    <div class="game-canvas">
+      <!-- World -->
+      <div class="road-world">
+        <div class="road-h"></div>
+        <div class="road-v"></div>
+        <div class="lane-center-h"></div>
+        <div class="lane-center-v"></div>
+        <div class="curb-h-top"></div><div class="curb-h-bot"></div>
+        <div class="curb-v-left"></div><div class="curb-v-right"></div>
+        <div class="tree" style="top:40px;left:60px"></div>
+        <div class="tree" style="top:80px;left:180px"></div>
+        <div class="tree" style="top:50px;right:120px"></div>
+        <div class="tree" style="top:460px;left:80px"></div>
+        <div class="tree" style="top:490px;right:80px"></div>
+        <div class="grass-patch" style="width:70px;height:45px;top:140px;left:280px"></div>
+        <div class="grass-patch" style="width:55px;height:35px;top:430px;right:260px"></div>
+      </div>
+
+      <!-- Cookie 1 -->
+      <div class="cookie-css" style="top:140px;left:580px;" title="Cookie 1 — position (300, -150) in scene"></div>
+      <!-- Cookie 2 -->
+      <div class="cookie-css" style="top:420px;left:240px;" title="Cookie 2 — position (-200, 200) in scene"></div>
+
+      <!-- Jeep 1 -->
+      <div class="jeep-css" style="top:220px;left:640px;">
+        <div class="jeep-body"></div>
+        <div class="jeep-top"></div>
+        <div class="jeep-glass"></div>
+        <div class="jwheel fl"></div><div class="jwheel fr"></div>
+        <div class="jwheel rl"></div><div class="jwheel rr"></div>
+      </div>
+      <!-- Jeep 2 -->
+      <div class="jeep-css" style="top:160px;left:100px;">
+        <div class="jeep-body"></div>
+        <div class="jeep-top"></div>
+        <div class="jeep-glass"></div>
+        <div class="jwheel fl"></div><div class="jwheel fr"></div>
+        <div class="jwheel rl"></div><div class="jwheel rr"></div>
+      </div>
+
+      <!-- Player Car -->
+      <div class="car-red" style="top:290px;left:454px;">
+        <div class="car-body"></div>
+        <div class="car-windshield"></div>
+        <div class="car-hood"></div>
+        <div class="wheel fl"></div><div class="wheel fr"></div>
+        <div class="wheel rl"></div><div class="wheel rr"></div>
+      </div>
+
+      <!-- Griddy Kid (dancing, shown when boost active) -->
+      <div class="griddy-css" style="top:60px;left:460px;">
+        <div class="ghead"></div>
+        <div class="gbody"></div>
+        <div class="gleg l"></div>
+        <div class="gleg r"></div>
+        <div class="garm l"></div>
+        <div class="garm r"></div>
+      </div>
+      <div class="griddy-label" style="top:50px;left:494px;">GRIDDY!</div>
+
+      <!-- HUD Overlay -->
+      <div class="hud-overlay">
+        <!-- Timer (top center) -->
+        <div class="hud-timer">
+          <div class="tm-label">Time</div>
+          <div class="tm-value">1:42</div>
+        </div>
+
+        <!-- Cookie counter (top right) -->
+        <div class="hud-cookies">
+          <div class="ck-icon"></div>
+          <div>
+            <div class="ck-text">1 / 2</div>
+            <div class="ck-label">COOKIES</div>
+          </div>
+        </div>
+
+        <!-- Jeep counter (top right, left of cookies) -->
+        <div class="hud-jeeps">
+          <div class="jp-icon"></div>
+          <div>
+            <div class="jp-text">0 HIT</div>
+            <div class="jp-label">JEEPS</div>
+          </div>
+        </div>
+
+        <!-- Speed meter (bottom left) -->
+        <div class="hud-speed">
+          <div class="spd-label">Speed</div>
+          <div class="spd-bar-bg">
+            <div class="spd-bar-fill" style="width:72%"></div>
+          </div>
+          <div>
+            <span class="spd-value">7.2</span>
+            <span class="spd-unit"> u/s</span>
+          </div>
+        </div>
+
+        <!-- Boost (bottom, beside speed) -->
+        <div class="hud-boost boost-active">
+          <div class="boost-label">Cookie Boost</div>
+          <div class="boost-row">
+            <div class="boost-icon">+</div>
+            <div class="boost-text">ACTIVE</div>
+          </div>
+          <div class="boost-timer">3.2s remaining</div>
+        </div>
+
+        <!-- Stun (bottom, beside boost) -->
+        <div class="hud-stun stun-inactive">
+          <div class="stun-label">Stun</div>
+          <div class="stun-row">
+            <div class="stun-icon">X</div>
+            <div class="stun-text">CLEAR</div>
+          </div>
+        </div>
+
+        <!-- Controls reminder (bottom right) -->
+        <div class="hud-controls">
+          <span>UP</span> Accelerate &nbsp; <span>DOWN</span> Brake<br>
+          <span>LEFT / RIGHT</span> Steer
+        </div>
+      </div>
+
+      <!-- Annotations (design-time labels) -->
+      <div class="hud-annotation ann-right" style="top:12px;left:50%;transform:translateX(-50%) translateY(46px);">PROPOSED: Countdown Timer</div>
+      <div class="hud-annotation ann-left" style="top:12px;right:4px;">PROPOSED: Cookie Counter</div>
+      <div class="hud-annotation ann-down" style="bottom:130px;left:10px;">PROPOSED: Speed Bar</div>
+      <div class="hud-annotation ann-down" style="bottom:130px;left:130px;">PROPOSED: Boost Indicator</div>
+      <div class="hud-annotation ann-up" style="top:42px;left:460px;">GriddyKid &mdash; scene pos (0,-400)</div>
+    </div>
+
+    <!-- ASCII annotation -->
+    <div style="max-width:960px;margin:20px auto 0;">
+      <div class="wireframe-notes">GAMEPLAY HUD WIREFRAME ANNOTATION
+&#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;
+&#x2502;  TOP BAR  [JEEP COUNTER left of center] [TIMER center] [COOKIE CTR right]  &#x2502;
+&#x2502;  WORLD    Road cross, grass, trees, 2 cookies, 2 jeeps placed per scene  &#x2502;
+&#x2502;  PLAYER   Red car at scene origin (center of view due to Camera2D)        &#x2502;
+&#x2502;  GRIDDY   Shows at world pos (0,-400) — visible when Camera2D follows car &#x2502;
+&#x2502;  BOTTOM L [SPEED BAR 110px] [BOOST STATUS 130px] [STUN STATUS 120px]     &#x2502;
+&#x2502;  BOTTOM R [CONTROLS HINT — fades after 5s of play]                       &#x2502;
+&#x2502;  BOOST    When active: bar glows gold, "ACTIVE" text, countdown timer     &#x2502;
+&#x2502;  STUN     When hit: screen edge flash red, "STUNNED 2.0s" countdown       &#x2502;
+&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ GAME OVER ══════════════ -->
+  <div id="screen-game-over" class="screen">
+    <div class="game-canvas">
+      <!-- World (blurred behind) -->
+      <div class="road-world" style="filter:blur(3px) brightness(0.4);">
+        <div class="road-h"></div>
+        <div class="road-v"></div>
+        <div class="lane-center-h"></div>
+        <div class="lane-center-v"></div>
+        <div class="curb-h-top"></div><div class="curb-h-bot"></div>
+        <div class="curb-v-left"></div><div class="curb-v-right"></div>
+      </div>
+
+      <!-- Red vignette flash (stun effect representation) -->
+      <div style="position:absolute;inset:0;border:24px solid rgba(255,59,59,0.25);pointer-events:none;border-radius:10px;"></div>
+
+      <!-- Game Over Panel -->
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:2;">
+        <div class="wipeout-title">WIPEOUT!</div>
+        <div class="wipeout-sub">Your car got nailed by a Jeep</div>
+
+        <div class="center-panel">
+          <!-- Stats -->
+          <div class="section-line">Session Stats</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="st-icon">&#11044;</div>
+              <div class="st-value">2</div>
+              <div class="st-label">Cookies Collected</div>
+            </div>
+            <div class="stat-card">
+              <div class="st-icon">&#9645;</div>
+              <div class="st-value">1</div>
+              <div class="st-label">Jeeps Dodged</div>
+            </div>
+            <div class="stat-card">
+              <div class="st-icon">&#9201;</div>
+              <div class="st-value">1:42</div>
+              <div class="st-label">Survived</div>
+            </div>
+          </div>
+
+          <!-- Rating -->
+          <div class="rating-banner" style="margin-bottom:14px;">
+            <div class="rt-title">Run Rating</div>
+            <div class="rt-value">SPEED DEMON</div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="btn-row">
+            <div class="btn-primary">PLAY AGAIN</div>
+            <div class="btn-secondary">MAIN MENU</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASCII annotation -->
+    <div style="max-width:960px;margin:20px auto 0;">
+      <div class="wireframe-notes">GAME OVER WIREFRAME ANNOTATION
+&#x250C;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2510;
+&#x2502;  BG       Blurred+dimmed game world (blur:3px brightness:40%)            &#x2502;
+&#x2502;  VIGNETTE Red edge border glow (reinforces "impact" event)               &#x2502;
+&#x2502;  TITLE    "WIPEOUT!" 68px 900w — pulsing glow animation                  &#x2502;
+&#x2502;  SUBTITLE Context string: what caused game over (jeep hit)               &#x2502;
+&#x2502;  STATS    3-column grid: Cookies / Jeeps Dodged / Time Survived           &#x2502;
+&#x2502;  RATING   "SPEED DEMON" tier label (future: tiered by cookies+time)       &#x2502;
+&#x2502;  BUTTONS  [PLAY AGAIN primary] [MAIN MENU secondary]                      &#x2502;
+&#x2514;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2518;</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ AUDIT ══════════════ -->
+  <div id="screen-audit" class="screen">
+    <div class="audit-layout">
+
+      <!-- Sidebar nav -->
+      <div class="audit-sidebar">
+        <div style="font-size:11px;color:#444;letter-spacing:2px;text-transform:uppercase;padding:4px 0 8px;">Jump to Section</div>
+        <div class="audit-nav-item active" onclick="scrollAudit('findings')">
+          <div class="audit-dot dot-critical"></div>Critical Findings
+        </div>
+        <div class="audit-nav-item" onclick="scrollAudit('working')">
+          <div class="audit-dot dot-good"></div>What's Working
+        </div>
+        <div class="audit-nav-item" onclick="scrollAudit('game-loop')">
+          <div class="audit-dot dot-warning"></div>Game Loop Eval
+        </div>
+        <div class="audit-nav-item" onclick="scrollAudit('priority')">
+          <div class="audit-dot dot-warning"></div>Priority Fix List
+        </div>
+        <div class="audit-nav-item" onclick="scrollAudit('variants')">
+          <div class="audit-dot dot-info"></div>Design Variants
+        </div>
+        <div class="audit-nav-item" onclick="scrollAudit('palette')">
+          <div class="audit-dot dot-info"></div>Color Palettes
+        </div>
+        <div class="audit-nav-item" onclick="scrollAudit('access')">
+          <div class="audit-dot dot-info"></div>Accessibility
+        </div>
+
+        <div style="margin-top:8px;padding:12px;background:#13132a;border:1px solid #222240;border-radius:8px;font-size:11px;color:#555;line-height:1.6;">
+          <div style="color:#888;font-weight:bold;margin-bottom:6px;">Project Info</div>
+          Engine: Godot 4.6<br>
+          Language: GDScript<br>
+          Renderer: D3D12 / Forward+<br>
+          Physics: Jolt<br>
+          Scene: main.tscn<br>
+          Script: sprite_2d.gd<br>
+          Assets: 5 textures + SVG icon
+        </div>
+      </div>
+
+      <!-- Main audit content -->
+      <div class="audit-main">
+
+        <!-- Critical findings -->
+        <div class="audit-section" id="audit-findings">
+          <h2><span class="audit-badge badge-critical">CRITICAL</span> Missing Game Screens &amp; Systems</h2>
+          <div class="finding-list">
+            <div class="finding-item">
+              <div class="fi-icon fi-critical">1</div>
+              <div>
+                <h4>No Main Menu / Start Screen</h4>
+                <p>Game launches directly into gameplay with no context, title, or instructions. First-time players have no onboarding. The game drops the player cold into a scene with no explanation of objectives, controls, or what cookies and jeeps do.</p>
+              </div>
+              <div class="fi-tag">P0</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-critical">2</div>
+              <div>
+                <h4>No Game Over State</h4>
+                <p>When the player hits a Jeep and the stun resolves, gameplay simply continues with no consequence or session endpoint. There is no game-over condition, no results screen, and no replay loop. The player has no goal to work toward.</p>
+              </div>
+              <div class="fi-tag">P0</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-critical">3</div>
+              <div>
+                <h4>No HUD — Zero Feedback on Game State</h4>
+                <p>There is no speed readout, no boost timer, no stun countdown, and no cookie count displayed. When boost_time is running, the player has no way to see how much boost remains. When crash_time is active, there is no visual indicator other than the car not responding to input.</p>
+              </div>
+              <div class="fi-tag">P0</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-critical">4</div>
+              <div>
+                <h4>No Goal / Win Condition</h4>
+                <p>The game has no score, no timer, and no defined objective. After collecting both cookies (which then disappear) and colliding with both jeeps (which also disappear), the scene becomes empty with nothing left to do. The README says "see how long you can last" but there is no timer measuring this.</p>
+              </div>
+              <div class="fi-tag">P0</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-critical">5</div>
+              <div>
+                <h4>Duplicate Camera2D Nodes</h4>
+                <p>main.tscn contains two Camera2D nodes: one parented to the player Sprite2D (correct — follows the car) and one parented to the root Node2D (static, competes with player cam). This will cause undefined camera behavior in Godot 4 and should be removed.</p>
+              </div>
+              <div class="fi-tag">P0 / BUG</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-critical">6</div>
+              <div>
+                <h4>CountdownLabel Exists But Is Never Populated</h4>
+                <p>A Label node with font_size 120 exists in the scene at offset_top -300 with no text and no script wiring. It is visually inaccessible (positioned above the viewport) and never updated by sprite_2d.gd. Either wire it to the boost/stun timers or remove it to avoid confusion.</p>
+              </div>
+              <div class="fi-tag">P1 / BUG</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning findings -->
+        <div class="audit-section">
+          <h2><span class="audit-badge badge-warning">WARNING</span> UX / Feedback Gaps</h2>
+          <div class="finding-list">
+            <div class="finding-item">
+              <div class="fi-icon fi-warning">W1</div>
+              <div>
+                <h4>Cookie Pickup Has No Audio or Visual Feedback</h4>
+                <p>The cookie simply disappears (queue_free). There is no particle burst, no sound cue, no screen flash. The only feedback is the Griddy animation starting — which is off-screen at position (0, -400) relative to scene origin. If the player car is far from origin, Griddy is off-camera entirely.</p>
+              </div>
+              <div class="fi-tag">P1</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-warning">W2</div>
+              <div>
+                <h4>Jeep Hit Shake Is On the Jeep, Not the Camera</h4>
+                <p>The collision shake effect (j.position.x +/-8) shakes the Jeep sprite, not the player's camera. Best-practice game feel dictates that impact feedback should shake the player's view or the player car — not the obstacle. The current effect is barely noticeable.</p>
+              </div>
+              <div class="fi-tag">P1</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-warning">W3</div>
+              <div>
+                <h4>Boost Does Not Change Max Speed</h4>
+                <p>During boost_time, the input section is skipped entirely — the player cannot accelerate or brake. This means boost provides no speed increase whatsoever; it only removes player control. This is almost certainly a bug and contrary to the README description of "5-second speed boost."</p>
+              </div>
+              <div class="fi-tag">P1 / BUG</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-warning">W4</div>
+              <div>
+                <h4>Jeeps and Cookies Disappear Permanently</h4>
+                <p>After collecting both cookies and hitting both jeeps, the scene is cleared of all interactive objects. There is no respawning mechanic, making the game effectively end in a non-obvious way (the car just drives around an empty map).</p>
+              </div>
+              <div class="fi-tag">P1</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-warning">W5</div>
+              <div>
+                <h4>No Pause / ESC Handling</h4>
+                <p>Pressing Escape in Godot 4 defaults to quitting the game window unless handled. There is no pause menu, no mid-session quit option, and no way to return to a main menu (which does not exist yet).</p>
+              </div>
+              <div class="fi-tag">P2</div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-warning">W6</div>
+              <div>
+                <h4>Collision Detection Is Distance-Based, Not Physics-Based</h4>
+                <p>The Area2D and CollisionShape2D nodes on cookies exist but are not connected to any signal. All collision detection is manual distance checks in _process (40px for cookies, 45px for jeeps). This bypasses Godot's physics engine entirely and will produce inconsistent results at high speeds (tunneling).</p>
+              </div>
+              <div class="fi-tag">P2</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- What's working -->
+        <div class="audit-section" id="audit-working">
+          <h2><span class="audit-badge badge-good">GOOD</span> What's Working Well</h2>
+          <div class="finding-list">
+            <div class="finding-item">
+              <div class="fi-icon fi-good">+</div>
+              <div>
+                <h4>Physics Feel Is Surprisingly Good</h4>
+                <p>The speed ramp (accel +20/s, brake -30/s, friction -10/s) gives the car believable weight. Reverse cap at -5 is correct. The rotational speed (delta * 4 rad/s) is well-tuned for a top-down arcade racer.</p>
+              </div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-good">+</div>
+              <div>
+                <h4>Griddy Animation Is Charming and Well-Constructed</h4>
+                <p>6-frame sprite sheet over 2 seconds with a clean AnimationPlayer setup. The animation_finished callback correctly resets to frame 0. This is a standout personality moment for the game and should be made more visible with a screen-space Griddy panel.</p>
+              </div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-good">+</div>
+              <div>
+                <h4>Code Architecture Is Clean and Readable</h4>
+                <p>sprite_2d.gd is concise (56 lines), well-organized, and easy to extend. State is clearly separated into boost_time and crash_time floats. Good foundation for adding a proper game loop.</p>
+              </div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-good">+</div>
+              <div>
+                <h4>Camera2D on Player Is Correct Approach</h4>
+                <p>Attaching Camera2D as a child of the player Sprite2D ensures the view follows the car correctly. This is the right pattern for this game type. (The duplicate root-level Camera2D should be removed.)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Loop Evaluation -->
+        <div class="audit-section" id="audit-game-loop">
+          <h2><span class="audit-badge badge-warning">ANALYSIS</span> Game Loop Evaluation</h2>
+          <div class="finding-list">
+            <div class="finding-item">
+              <div class="fi-icon fi-warning">!</div>
+              <div>
+                <h4>No Formal Game Loop Exists Yet</h4>
+                <p>A game loop requires: a defined start state, an ongoing challenge, a measurable outcome, and an end state that loops back to start. Racing Dodgio has a start (game launches) and a challenge (dodge jeeps, collect cookies) but lacks a measurable outcome (no score/timer) and a proper end state (no game over / restart). Recommend: add a 90-second survival timer as the core loop metric. Score = cookies collected x 100 - jeep hits x 50. Game over when timer reaches 0 or when all jeeps have been hit.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Priority fix list -->
+        <div class="audit-section" id="audit-priority">
+          <h2><span class="audit-badge badge-warning">ROADMAP</span> Priority Fix List</h2>
+          <table class="priority-table">
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Fix</th>
+                <th>Effort</th>
+                <th>Impact</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="p-tag p-p0">P0</span></td>
+                <td>Add survival timer (CountdownLabel already exists — wire it up)</td>
+                <td>30 min</td>
+                <td>Defines the core loop</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p0">P0</span></td>
+                <td>Add Game Over screen when timer hits 0 or all jeeps hit</td>
+                <td>1 hr</td>
+                <td>Closes the game loop</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p0">P0</span></td>
+                <td>Add Main Menu scene with PLAY button and controls list</td>
+                <td>1 hr</td>
+                <td>Critical for first-run UX</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p0">P0</span></td>
+                <td>Remove duplicate root-level Camera2D node</td>
+                <td>5 min</td>
+                <td>Fixes undefined rendering bug</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p1">P1</span></td>
+                <td>Fix boost: it should set current_speed to 15 (not skip input)</td>
+                <td>15 min</td>
+                <td>Boost currently does nothing positive</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p1">P1</span></td>
+                <td>Add HUD: speed bar, boost countdown, stun countdown</td>
+                <td>2 hrs</td>
+                <td>Players cannot read game state</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p1">P1</span></td>
+                <td>Move Griddy to screen-space CanvasLayer so it's always visible</td>
+                <td>30 min</td>
+                <td>Core delight moment is currently invisible</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p1">P1</span></td>
+                <td>Add camera shake on jeep hit (offset Camera2D, not Jeep.position)</td>
+                <td>30 min</td>
+                <td>Impact feedback is currently imperceptible</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p2">P2</span></td>
+                <td>Add cookie respawn timer (30s) so map never empties</td>
+                <td>30 min</td>
+                <td>Prevents unwinnable empty-map state</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p2">P2</span></td>
+                <td>Add ESC pause menu with Resume / Main Menu options</td>
+                <td>1 hr</td>
+                <td>Prevents accidental quit</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p3">P3</span></td>
+                <td>Replace manual distance collision with Area2D signals (already in scene)</td>
+                <td>1 hr</td>
+                <td>Prevents tunneling at high speed</td>
+              </tr>
+              <tr>
+                <td><span class="p-tag p-p3">P3</span></td>
+                <td>Add cookie pickup particle burst (GPUParticles2D or AnimatedSprite2D)</td>
+                <td>1 hr</td>
+                <td>Reward feedback, matches game personality</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Design variants -->
+        <div class="audit-section" id="audit-variants">
+          <h2><span class="audit-badge badge-info">DESIGN</span> Color Variant Rationale</h2>
+          <div class="variant-rationale">
+            <div class="vr-card" style="border-color:rgba(255,59,59,0.25);">
+              <h4 style="color:#FF3B3B;">A &mdash; Neon Asphalt</h4>
+              <p>Dark near-black background (#0d0d1a) with red (#FF3B3B) as primary accent and gold (#FFD700) for reward moments. Maximizes contrast and arcade energy.</p>
+              <div class="vr-label">Pros</div>
+              <div class="vr-val" style="margin-bottom:6px;">High contrast, cinematic, matches the "danger" of jeep collisions</div>
+              <div class="vr-label">Cons</div>
+              <div class="vr-val" style="margin-bottom:6px;">Dark UI may not read well in bright environments</div>
+              <div class="vr-label">Best For</div>
+              <div class="vr-val">Older kids, teens, PC players in dim rooms</div>
+            </div>
+            <div class="vr-card" style="border-color:rgba(255,215,0,0.25);">
+              <h4 style="color:#FFD700;">B &mdash; Sunny Arcade</h4>
+              <p>High-saturation yellow (#FFD700) on dark — evocative of classic arcade cabinets and bumper cars. Optimistic, energetic, family-friendly.</p>
+              <div class="vr-label">Pros</div>
+              <div class="vr-val" style="margin-bottom:6px;">Instantly cheerful, matches cookie/griddy personality, great on bright monitors</div>
+              <div class="vr-label">Cons</div>
+              <div class="vr-val" style="margin-bottom:6px;">Yellow-on-dark can reduce legibility at small sizes (check 4.5:1 ratio)</div>
+              <div class="vr-label">Best For</div>
+              <div class="vr-val">Young kids, family co-op sessions, casual play</div>
+            </div>
+            <div class="vr-card" style="border-color:rgba(0,229,255,0.25);">
+              <h4 style="color:#00E5FF;">C &mdash; Cyan Neon</h4>
+              <p>Cyberpunk-lite palette with electric cyan (#00E5FF) and dark asphalt. Gives the game a late-night street race vibe. Blue car variant replaces red.</p>
+              <div class="vr-label">Pros</div>
+              <div class="vr-val" style="margin-bottom:6px;">Distinctive, modern, stands out from typical arcade games</div>
+              <div class="vr-label">Cons</div>
+              <div class="vr-val" style="margin-bottom:6px;">Tone mismatch with silly Griddy dance — may feel too "serious"</div>
+              <div class="vr-label">Best For</div>
+              <div class="vr-val">Older audience, streamers, screenshot/social media appeal</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Color palettes -->
+        <div class="audit-section" id="audit-palette">
+          <h2><span class="audit-badge badge-info">PALETTES</span> Color Swatches</h2>
+          <div class="palette-grid">
+            <!-- Variant A -->
+            <div class="palette-card">
+              <div class="palette-header" style="background:#0d0d1a;color:#FF3B3B;">A &mdash; Neon Asphalt</div>
+              <div class="palette-swatches">
+                <div class="swatch" style="background:#FF3B3B;color:#fff;">Primary — Danger Red<span>#FF3B3B</span></div>
+                <div class="swatch" style="background:#FFD700;color:#111;">Accent — Boost Gold<span>#FFD700</span></div>
+                <div class="swatch" style="background:#0d0d1a;color:#666;border-top:1px solid #1c1c38;">Background<span>#0d0d1a</span></div>
+                <div class="swatch" style="background:#13132a;color:#666;">Surface<span>#13132a</span></div>
+                <div class="swatch" style="background:#2d5a1b;color:#6a9e40;">Grass<span>#2d5a1b</span></div>
+                <div class="swatch" style="background:#3a3a3a;color:#888;">Asphalt<span>#3a3a3a</span></div>
+                <div class="swatch" style="background:#4CAF50;color:#fff;">Jeep Green<span>#4CAF50</span></div>
+                <div class="swatch" style="background:#c87941;color:#fff;">Cookie Brown<span>#c87941</span></div>
+              </div>
+            </div>
+            <!-- Variant B -->
+            <div class="palette-card">
+              <div class="palette-header" style="background:#111108;color:#FFD700;">B &mdash; Sunny Arcade</div>
+              <div class="palette-swatches">
+                <div class="swatch" style="background:#FFD700;color:#111;">Primary — Arcade Yellow<span>#FFD700</span></div>
+                <div class="swatch" style="background:#FF8C00;color:#fff;">Accent — Warm Orange<span>#FF8C00</span></div>
+                <div class="swatch" style="background:#111108;color:#666;border-top:1px solid #222215;">Background<span>#111108</span></div>
+                <div class="swatch" style="background:#1a1a0a;color:#666;">Surface<span>#1a1a0a</span></div>
+                <div class="swatch" style="background:#3a6e1f;color:#78b845;">Grass<span>#3a6e1f</span></div>
+                <div class="swatch" style="background:#444;color:#999;">Asphalt<span>#444444</span></div>
+                <div class="swatch" style="background:#E65100;color:#fff;">Jeep Orange<span>#E65100</span></div>
+                <div class="swatch" style="background:#c87941;color:#fff;">Cookie Brown<span>#c87941</span></div>
+              </div>
+            </div>
+            <!-- Variant C -->
+            <div class="palette-card">
+              <div class="palette-header" style="background:#050d10;color:#00E5FF;">C &mdash; Cyan Neon</div>
+              <div class="palette-swatches">
+                <div class="swatch" style="background:#00E5FF;color:#000;">Primary — Electric Cyan<span>#00E5FF</span></div>
+                <div class="swatch" style="background:#0066FF;color:#fff;">Accent — Neon Blue<span>#0066FF</span></div>
+                <div class="swatch" style="background:#050d10;color:#444;border-top:1px solid #0a1e24;">Background<span>#050d10</span></div>
+                <div class="swatch" style="background:#0a1a20;color:#444;">Surface<span>#0a1a20</span></div>
+                <div class="swatch" style="background:#1a2a1a;color:#3a6e3a;">Grass<span>#1a2a1a</span></div>
+                <div class="swatch" style="background:#111;color:#555;">Asphalt<span>#111111</span></div>
+                <div class="swatch" style="background:#00BCD4;color:#000;">Jeep Teal<span>#00BCD4</span></div>
+                <div class="swatch" style="background:#00E5FF44;color:#00E5FF;">Cookie Glow<span>#00E5FF</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accessibility -->
+        <div class="audit-section" id="audit-access">
+          <h2><span class="audit-badge badge-info">A11Y</span> Accessibility Notes</h2>
+          <div class="finding-list">
+            <div class="finding-item">
+              <div class="fi-icon fi-info">A</div>
+              <div>
+                <h4>Contrast: Red Car vs Green Grass</h4>
+                <p>Red (#D32F2F) on green (#2d5a1b) is a problematic combination for red-green colorblind users (affects ~8% of males). Recommend adding a dark outline/border to the player car sprite, or offering a colorblind mode that uses a blue car instead. Variant C already uses blue.</p>
+              </div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-info">A</div>
+              <div>
+                <h4>HUD Text Contrast (WCAG AA)</h4>
+                <p>All proposed HUD labels use white or light text on semi-transparent dark panels (rgba 0,0,0,0.72). This achieves approximately 7:1 contrast ratio — passes WCAG AA and AAA. Maintain panel opacity at 0.65 or higher to preserve this.</p>
+              </div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-info">A</div>
+              <div>
+                <h4>Font Size: CountdownLabel at 120px Is Appropriate</h4>
+                <p>The existing Label node uses font_size 120. For in-world countdown feedback this is correct — large enough to read at a glance. Ensure it renders inside the viewport bounds (currently positioned at offset_top -300 which places it off-screen).</p>
+              </div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-info">A</div>
+              <div>
+                <h4>Keyboard-Only Control is Correct — Consider Adding WASD</h4>
+                <p>Arrow keys are the only supported input. Adding WASD as an alternate mapping (via Godot Input Map) would align with dominant PC gamer muscle memory and reduces strain for left-hand players. Zero code changes required beyond adding Input Map entries.</p>
+              </div>
+            </div>
+            <div class="finding-item">
+              <div class="fi-icon fi-info">A</div>
+              <div>
+                <h4>No Audio — Plan for Audio Accessibility</h4>
+                <p>When audio is added, ensure all audio feedback has a corresponding visual equivalent (e.g., screen flash for cookie pickup, edge vignette for jeep hit). This supports deaf/hard-of-hearing players and environments where audio is muted.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /audit-main -->
+    </div><!-- /audit-layout -->
+  </div><!-- /audit screen -->
+
+</div><!-- /screens -->
+
+<script>
+  var currentVariant = 'va';
+
+  var variantDescs = {
+    va: 'Dark red/orange on near-black \u2014 high-contrast arcade energy',
+    vb: 'Saturated yellow on dark \u2014 cheerful arcade cabinet feel',
+    vc: 'Electric cyan on near-black \u2014 cyberpunk street race vibe'
+  };
+
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    var el = document.getElementById('screen-' + tabId);
+    if (el) el.classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  function switchVariant(v, btn) {
+    document.body.classList.remove('va', 'vb', 'vc');
+    if (v !== 'va') document.body.classList.add(v);
+    currentVariant = v;
+    document.querySelectorAll('.variant-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    var desc = document.getElementById('vdesc');
+    if (desc) desc.textContent = variantDescs[v] || '';
+  }
+
+  function scrollAudit(section) {
+    document.querySelectorAll('.audit-nav-item').forEach(function(n) { n.classList.remove('active'); });
+    event.currentTarget.classList.add('active');
+    var targets = { findings: 'audit-findings', working: 'audit-working', 'game-loop': 'audit-game-loop', priority: 'audit-priority', variants: 'audit-variants', palette: 'audit-palette', access: 'audit-access' };
+    var id = targets[section];
+    if (id) {
+      var el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // Initialize variant A as active
+  document.querySelector('.variant-btn.va').classList.add('active');
+</script>
+</body>
+</html>
