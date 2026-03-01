@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="RacingDodgio"
-run/main_scene="uid://d1isrcad0oos2"
+run/main_scene="res://main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+GameData="*res://game_data.gd"
 
 [physics]
 

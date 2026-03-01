@@ -1,15 +1,43 @@
 [gd_scene format=3 uid="uid://d1isrcad0oos2"]
 
-[ext_resource type="Texture2D" uid="uid://cqj3xmoftxnsn" path="res://Red Car.png" id="1_0xm2m"]
-[ext_resource type="Script" uid="uid://c08uyhso44s7e" path="res://sprite_2d.gd" id="2_h2yge"]
-[ext_resource type="Texture2D" uid="uid://btira034u1tve" path="res://cookie.png" id="3_h2yge"]
-[ext_resource type="Texture2D" uid="uid://dbweo8r7xm6aw" path="res://Jeep.png" id="4_lquwl"]
-[ext_resource type="Texture2D" uid="uid://c8unts6x4yqru" path="res://griddy_sheet.png" id="5_lquwl"]
+[ext_resource type="Script"    path="res://race_manager.gd"   id="1_mgr"]
+[ext_resource type="Script"    path="res://player_car.gd"     id="2_player"]
+[ext_resource type="Texture2D" path="res://Red Car.png"       id="3_car"]
+[ext_resource type="Texture2D" path="res://griddy_sheet.png"  id="4_griddy"]
 
-[sub_resource type="LabelSettings" id="LabelSettings_h2yge"]
-font_size = 120
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
+bg_color = Color(0.07, 0.06, 0.18, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.333, 0.200, 0.733, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
 
-[sub_resource type="Animation" id="Animation_lquwl"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stand"]
+bg_color = Color(0.07, 0.06, 0.18, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.333, 0.200, 0.733, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+
+[sub_resource type="Animation" id="Animation_reset"]
 length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -24,7 +52,7 @@ tracks/0/keys = {
 "values": [0]
 }
 
-[sub_resource type="Animation" id="Animation_7mycd"]
+[sub_resource type="Animation" id="Animation_griddy"]
 resource_name = "griddy"
 length = 2.0
 tracks/0/type = "value"
@@ -40,63 +68,255 @@ tracks/0/keys = {
 "values": [0, 1, 2, 3, 4, 4]
 }
 
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_272bh"]
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_main"]
 _data = {
-&"RESET": SubResource("Animation_lquwl"),
-&"griddy": SubResource("Animation_7mycd")
+&"RESET": SubResource("Animation_reset"),
+&"griddy": SubResource("Animation_griddy")
 }
 
-[node name="Node2D" type="Node2D" unique_id=1093655733]
+[node name="Race" type="Node2D"]
+script = ExtResource("1_mgr")
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=2090803056]
-scale = Vector2(0.25, 0.25)
-texture = ExtResource("1_0xm2m")
-script = ExtResource("2_h2yge")
+[node name="Grass" type="ColorRect" parent="."]
+position = Vector2(-8000, -8000)
+size = Vector2(20000, 20000)
+color = Color(0.102, 0.227, 0.102, 1)
+z_index = -10
 
-[node name="Camera2D" type="Camera2D" parent="Sprite2D" unique_id=462589449]
+[node name="Shoulder" type="Line2D" parent="."]
 
-[node name="Camera2D" type="Camera2D" parent="." unique_id=2120159286]
+[node name="Road" type="Line2D" parent="."]
 
-[node name="Cookie1" type="Sprite2D" parent="." unique_id=1095902517]
-position = Vector2(300, -150)
-scale = Vector2(0.1, 0.1)
-texture = ExtResource("3_h2yge")
+[node name="TrackPath" type="Path2D" parent="."]
 
-[node name="Area2D" type="Area2D" parent="Cookie1" unique_id=1496568013]
+[node name="PlayerCar" type="Sprite2D" parent="."]
+position = Vector2(1000, 600)
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("3_car")
+script = ExtResource("2_player")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Cookie1/Area2D" unique_id=413580435]
+[node name="Camera2D" type="Camera2D" parent="PlayerCar"]
+zoom = Vector2(0.65, 0.65)
 
-[node name="Cookie2" type="Sprite2D" parent="." unique_id=352536862]
-position = Vector2(-200, 200)
-scale = Vector2(0.1, 0.1)
-texture = ExtResource("3_h2yge")
+[node name="HUD" type="CanvasLayer" parent="."]
 
-[node name="Area2D" type="Area2D" parent="Cookie2" unique_id=1932836579]
+; ── Stat Panel (top-left) ─────────────────────────────────────────────────
+[node name="StatPanel" type="PanelContainer" parent="HUD"]
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 212.0
+offset_bottom = 265.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_stat")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Cookie2/Area2D" unique_id=854210024]
+[node name="StatVBox" type="VBoxContainer" parent="HUD/StatPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
 
-[node name="CountdownLabel" type="Label" parent="." unique_id=1637179929]
-offset_top = -300.0
-offset_right = 40.0
-offset_bottom = -277.0
-label_settings = SubResource("LabelSettings_h2yge")
+[node name="PositionTag" type="Label" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+text = "POSITION"
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.53, 0.47, 0.80, 1)
+
+[node name="PositionRow" type="HBoxContainer" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+
+[node name="PlaceNumeral" type="Label" parent="HUD/StatPanel/StatVBox/PositionRow"]
+layout_mode = 2
+text = "1"
+theme_override_font_sizes/font_size = 56
+theme_override_colors/font_color = Color(1, 0.85, 0.1, 1)
+vertical_alignment = 1
+
+[node name="PlaceSuffix" type="Label" parent="HUD/StatPanel/StatVBox/PositionRow"]
+layout_mode = 2
+text = "st"
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+vertical_alignment = 2
+
+[node name="Div1" type="ColorRect" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+color = Color(1, 1, 1, 0.12)
+
+[node name="TimerLabel" type="Label" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+text = "0:00.00"
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+
+[node name="Div2" type="ColorRect" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+color = Color(1, 1, 1, 0.12)
+
+[node name="SpeedLabel" type="Label" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+text = "0 km/h"
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.6, 0.96, 0.6, 1)
+
+[node name="Div3" type="ColorRect" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 1)
+color = Color(1, 1, 1, 0.12)
+visible = false
+
+[node name="BoostStatusLabel" type="Label" parent="HUD/StatPanel/StatVBox"]
+layout_mode = 2
+text = "BOOST READY"
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
+visible = false
+
+; ── ESC hint (bottom-left) ───────────────────────────────────────────────
+[node name="EscHint" type="Label" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -46.0
+offset_right = 300.0
+offset_bottom = -16.0
+horizontal_alignment = 0
+text = "ESC — quit to menu"
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.55, 0.55, 0.55, 1)
+
+; ── Countdown (center screen) ────────────────────────────────────────────
+[node name="CountdownBacking" type="ColorRect" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.4
+anchor_right = 0.5
+anchor_bottom = 0.4
+offset_left = -120.0
+offset_top = -80.0
+offset_right = 120.0
+offset_bottom = 80.0
+color = Color(0, 0, 0, 0)
+mouse_filter = 2
+
+[node name="CountdownLabel" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.4
+anchor_right = 0.5
+anchor_bottom = 0.4
+offset_left = -100.0
+offset_top = -60.0
+offset_right = 100.0
+offset_bottom = 80.0
+pivot_offset = Vector2(100, 70)
 horizontal_alignment = 1
+theme_override_font_sizes/font_size = 96
+theme_override_colors/font_color = Color(1, 0.9, 0.1, 1)
 
-[node name="Jeep1" type="Sprite2D" parent="." unique_id=1462244938]
-position = Vector2(400, 100)
-scale = Vector2(0.25, 0.25)
-texture = ExtResource("4_lquwl")
+; ── Crash flash overlay ──────────────────────────────────────────────────
+[node name="FlashRect" type="ColorRect" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(1, 0, 0, 0)
+mouse_filter = 2
 
-[node name="Jeep2" type="Sprite2D" parent="." unique_id=1227325895]
-position = Vector2(-300, -200)
-scale = Vector2(0.25, 0.25)
-texture = ExtResource("4_lquwl")
+; ── Crash label (center, hidden by default) ──────────────────────────────
+[node name="CrashLabel" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -40.0
+offset_right = 200.0
+offset_bottom = 40.0
+horizontal_alignment = 1
+text = "!!! STUNNED !!!"
+theme_override_font_sizes/font_size = 52
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+visible = false
 
-[node name="GriddyKid" type="Sprite2D" parent="." unique_id=584297671]
-position = Vector2(0, -400)
-scale = Vector2(0.25, 0.25)
-texture = ExtResource("5_lquwl")
+; ── Boost / stun bar (bottom center) ────────────────────────────────────
+[node name="BoostBar" type="ProgressBar" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -28.0
+offset_right = 200.0
+offset_bottom = -8.0
+value = 0.0
+max_value = 5.0
+show_percentage = false
+
+; ── Stand Panel (top-right) ──────────────────────────────────────────────
+[node name="StandPanel" type="PanelContainer" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -215.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 240.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_stand")
+
+[node name="StandVBox" type="VBoxContainer" parent="HUD/StandPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="StandHeader" type="HBoxContainer" parent="HUD/StandPanel/StandVBox"]
+layout_mode = 2
+
+[node name="CrowdIcon" type="Label" parent="HUD/StandPanel/StandVBox/StandHeader"]
+layout_mode = 2
+text = "*"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.85, 0.1, 1)
+
+[node name="CrowdTitle" type="Label" parent="HUD/StandPanel/StandVBox/StandHeader"]
+layout_mode = 2
+text = " CROWD CAM"
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.8, 0.7, 1.0, 1)
+
+[node name="GriddyFrame" type="ColorRect" parent="HUD/StandPanel/StandVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 145)
+color = Color(0.04, 0.03, 0.12, 1)
+
+[node name="HypeBar" type="ProgressBar" parent="HUD/StandPanel/StandVBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 8)
+value = 0.0
+max_value = 5.0
+show_percentage = false
+
+[node name="HypeLabel" type="Label" parent="HUD/StandPanel/StandVBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "..."
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.8, 0.7, 1.0, 1)
+
+; ── Griddy sprite (positioned over GriddyFrame at runtime) ───────────────
+[node name="GriddyKid" type="Sprite2D" parent="HUD"]
+position = Vector2(0, 0)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("4_griddy")
 hframes = 6
 
-[node name="AnimationPlayer" type="AnimationPlayer" parent="GriddyKid" unique_id=216651326]
-libraries/ = SubResource("AnimationLibrary_272bh")
+[node name="AnimationPlayer" type="AnimationPlayer" parent="HUD/GriddyKid"]
+libraries/ = SubResource("AnimationLibrary_main")
+
+; ── Place-Up flash (center, hidden by default) ────────────────────────────
+[node name="PlaceUpLabel" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -160.0
+offset_top = 60.0
+offset_right = 160.0
+offset_bottom = 110.0
+horizontal_alignment = 1
+text = "MOVED UP!"
+theme_override_font_sizes/font_size = 38
+theme_override_colors/font_color = Color(0.2, 1.0, 0.4, 1)
+visible = false

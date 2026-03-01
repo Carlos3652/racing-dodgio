@@ -73,6 +73,8 @@ var hud_place_suffix:  Label
 var hud_timer:         Label
 var hud_speed:         Label
 var hud_boost_status:  Label
+var hud_div3:          ColorRect
+var hud_place_up:      Label
 var hud_countdown:     Label
 var countdown_backing: ColorRect
 var flash_rect:        ColorRect
@@ -84,8 +86,9 @@ var griddy_kid:        Sprite2D
 var griddy_anim:       AnimationPlayer
 
 var last_digit_shown: int = -1
-var hype_timer: float = 0.0
-var _scene_changing: bool = false
+var hype_timer:       float = 0.0
+var _scene_changing:  bool  = false
+var _last_place:      int   = 0
 
 # StyleBoxFlat instances for dynamic bar coloring
 var _boost_style:  StyleBoxFlat
@@ -295,6 +298,8 @@ func _setup_hud_refs() -> void:
 	hud_timer         = $HUD/StatPanel/StatVBox/TimerLabel
 	hud_speed         = $HUD/StatPanel/StatVBox/SpeedLabel
 	hud_boost_status  = $HUD/StatPanel/StatVBox/BoostStatusLabel
+	hud_div3          = $HUD/StatPanel/StatVBox/Div3
+	hud_place_up      = $HUD/PlaceUpLabel
 	hud_countdown     = $HUD/CountdownLabel
 	countdown_backing = $HUD/CountdownBacking
 	flash_rect        = $HUD/FlashRect
@@ -366,21 +371,30 @@ func _update_hud(delta: float) -> void:
 		3: hud_place_numeral.add_theme_color_override("font_color", Color(0.80, 0.50, 0.20, 1))  # bronze
 		_: hud_place_numeral.add_theme_color_override("font_color", Color(1.0,  1.0,  1.0,  1))  # white
 
+	# Place-Up flash — trigger when player gains a position
+	if _last_place > 0 and place < _last_place:
+		_flash_place_up()
+	_last_place = place
+
 	var mins = int(race_time) / 60
 	var secs = fmod(race_time, 60.0)
 	hud_timer.text = "%d:%05.2f" % [mins, secs]
 	hud_speed.text = "%d km/h" % player.get_speed_kmh()
 
-	# Boost status label (triple-state)
+	# Boost status label — only visible during boost or stun (hidden when idle)
 	if player.crash_time > 0:
-		hud_boost_status.text = "STUNNED %.1fs" % player.crash_time
+		hud_boost_status.visible = true
+		hud_div3.visible         = true
+		hud_boost_status.text    = "STUNNED %.1fs" % player.crash_time
 		hud_boost_status.add_theme_color_override("font_color", Color(1.0, 0.20, 0.20, 1))
 	elif player.boost_time > 0:
-		hud_boost_status.text = "BOOST %.1fs" % player.boost_time
+		hud_boost_status.visible = true
+		hud_div3.visible         = true
+		hud_boost_status.text    = "BOOST %.1fs" % player.boost_time
 		hud_boost_status.add_theme_color_override("font_color", Color(1.0, 0.85, 0.10, 1))
 	else:
-		hud_boost_status.text = "BOOST READY"
-		hud_boost_status.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55, 1))
+		hud_boost_status.visible = false
+		hud_div3.visible         = false
 
 	# Boost / stun bar at screen bottom
 	if player.crash_time > 0:
@@ -476,12 +490,25 @@ func _play_griddy() -> void:
 
 
 func _flash_screen() -> void:
-	crash_label.visible = true
+	crash_label.visible    = true
+	crash_label.modulate.a = 1.0
 	var tw = create_tween()
-	tw.tween_property(flash_rect, "color:a", 0.45, 0.08)
-	tw.tween_property(flash_rect, "color:a", 0.0,  0.25)
-	tw.tween_interval(0.2)
+	tw.tween_property(flash_rect,   "color:a",    0.45, 0.08)
+	tw.tween_property(flash_rect,   "color:a",    0.0,  0.25)
+	tw.tween_interval(0.25)
+	tw.tween_property(crash_label, "modulate:a", 0.0,  0.45)
 	tw.tween_callback(func(): crash_label.visible = false)
+
+
+func _flash_place_up() -> void:
+	hud_place_up.visible    = true
+	hud_place_up.modulate.a = 1.0
+	hud_place_up.scale      = Vector2(1.4, 1.4)
+	var tw = create_tween()
+	tw.tween_property(hud_place_up, "scale",      Vector2(1.0, 1.0), 0.25).set_trans(Tween.TRANS_BACK)
+	tw.tween_interval(0.8)
+	tw.tween_property(hud_place_up, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(func(): hud_place_up.visible = false)
 
 
 func _hide_pickup(node: Sprite2D, timer_dict: Dictionary, delay: float) -> void:
