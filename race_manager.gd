@@ -41,7 +41,7 @@ const JEEP_RESPAWN_SEC   = 14.0
 const COOKIE_OFFSETS = [0.18, 0.42, 0.65, 0.83]
 const JEEP_OFFSETS   = [0.28, 0.55, 0.75]
 
-const CAR_SCALE = Vector2(0.35, 0.35)
+const CAR_SCALE = Vector2(1.2, 1.2)
 
 # ---------------------------------------------------------------------------
 enum State { COUNTDOWN, RACING, FINISHED }
@@ -75,7 +75,7 @@ var crash_label:       Label
 var boost_bar:         ProgressBar
 var hype_bar:          ProgressBar
 var hype_label:        Label
-var griddy_kid:        Sprite2D
+var griddy_kid:        Node2D
 var griddy_anim:       AnimationPlayer
 
 var last_digit_shown: int = -1
@@ -251,6 +251,7 @@ func _build_track_path() -> void:
 		ai.car_label = AI_NAMES[i]
 		ai.car_color = AI_COLORS[i]
 		ai.progress  = float(i) * 40.0
+		ai.scale     = CAR_SCALE
 		ai.finished.connect(_on_car_finished)
 		track_path.add_child(ai)
 		ai_cars.append(ai)

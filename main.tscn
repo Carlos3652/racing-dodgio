@@ -3,7 +3,7 @@
 [ext_resource type="Script"    path="res://race_manager.gd"   id="1_mgr"]
 [ext_resource type="Script"    path="res://player_car.gd"     id="2_player"]
 [ext_resource type="Texture2D" path="res://Red Car.png"       id="3_car"]
-[ext_resource type="Texture2D" path="res://griddy_sheet.png"  id="4_griddy"]
+[ext_resource type="Script"    path="res://griddy_figure.gd"  id="4_griddy_fig"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.07, 0.06, 0.18, 0.92)
@@ -295,12 +295,11 @@ text = "..."
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.8, 0.7, 1.0, 1)
 
-; ── Griddy sprite (positioned over GriddyFrame at runtime) ───────────────
-[node name="GriddyKid" type="Sprite2D" parent="HUD"]
+; ── Griddy figure (positioned over GriddyFrame at runtime) ───────────────
+[node name="GriddyKid" type="Node2D" parent="HUD"]
 position = Vector2(0, 0)
-scale = Vector2(1.5, 1.5)
-texture = ExtResource("4_griddy")
-hframes = 6
+scale = Vector2(1.0, 1.0)
+script = ExtResource("4_griddy_fig")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="HUD/GriddyKid"]
 libraries/ = SubResource("AnimationLibrary_main")
