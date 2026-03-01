@@ -24,12 +24,16 @@ const TRACK_POINTS = [
 ]
 
 const ROAD_WIDTH     = 280.0
-const SHOULDER_W     = 320.0
-const ROAD_COLOR     = Color(0.42, 0.42, 0.42, 1)
-const SHOULDER_COLOR = Color(0.25, 0.25, 0.25, 1)
-const DASH_COLOR     = Color(0.97, 0.88, 0.1, 1)
-const DASH_LEN       = 70.0
-const GAP_LEN        = 80.0
+const SHOULDER_W     = 340.0
+const ROAD_COLOR     = Color(0.172, 0.172, 0.220, 1)
+const SHOULDER_COLOR = Color(0.102, 0.180, 0.102, 1)
+const DASH_COLOR     = Color(1.000, 0.878, 0.200, 1)
+const DASH_LEN       = 90.0
+const GAP_LEN        = 55.0
+const CURB_WHITE     = Color(0.941, 0.929, 0.878, 1)
+const CURB_RED       = Color(0.800, 0.133, 0.000, 1)
+const CURB_STRIPE_LEN   = 40.0
+const CURB_STRIPE_WIDTH = 18.0
 
 const AI_COLORS = [
 	Color(0.2,  0.5,  1.0),
@@ -140,16 +144,18 @@ func _build_road() -> void:
 	for p in TRACK_POINTS:
 		road.add_point(p)
 
-	_build_dashes()
-	_add_marker(TRACK_POINTS[0],                       "START",  Color(0.1, 0.95, 0.1))
-	_add_marker(TRACK_POINTS[TRACK_POINTS.size() - 1], "FINISH", Color(0.95, 0.15, 0.15))
-
-
-func _build_dashes() -> void:
+	# Build a shared curve used by dashes and curb stripes
 	var curve = Curve2D.new()
 	for p in TRACK_POINTS:
 		curve.add_point(p)
 
+	_build_dashes(curve)
+	_build_curb_stripes(curve)
+	_add_marker(TRACK_POINTS[0],                       "START",  Color(0.1, 0.95, 0.1))
+	_add_marker(TRACK_POINTS[TRACK_POINTS.size() - 1], "FINISH", Color(0.95, 0.15, 0.15))
+
+
+func _build_dashes(curve: Curve2D) -> void:
 	var total_len = curve.get_baked_length()
 	var pos       = DASH_LEN
 	var drawing   = true
@@ -159,16 +165,52 @@ func _build_dashes() -> void:
 			var p1 = curve.sample_baked(pos)
 			var p2 = curve.sample_baked(min(pos + DASH_LEN, total_len))
 			var dash = Line2D.new()
-			dash.width = 7.0
+			dash.width = 10.0
 			dash.default_color = DASH_COLOR
 			dash.add_point(p1)
 			dash.add_point(p2)
-			dash.z_index = 1
+			dash.z_index = 2
 			add_child(dash)
 			pos += DASH_LEN
 		else:
 			pos += GAP_LEN
 		drawing = not drawing
+
+
+func _build_curb_stripes(curve: Curve2D) -> void:
+	var total_len = curve.get_baked_length()
+	var offset    = (ROAD_WIDTH * 0.5) + 8.0
+	var pos       = 0.0
+	var is_white  = true
+
+	while pos < total_len:
+		var end_pos = min(pos + CURB_STRIPE_LEN, total_len)
+		var p1      = curve.sample_baked(pos)
+		var p2      = curve.sample_baked(end_pos)
+		var dir     = (p2 - p1).normalized()
+		var perp    = Vector2(-dir.y, dir.x)
+		var col     = CURB_WHITE if is_white else CURB_RED
+
+		# Left edge stripe
+		var left = Line2D.new()
+		left.width         = CURB_STRIPE_WIDTH
+		left.default_color = col
+		left.add_point(p1 - perp * offset)
+		left.add_point(p2 - perp * offset)
+		left.z_index = 1
+		add_child(left)
+
+		# Right edge stripe
+		var right = Line2D.new()
+		right.width         = CURB_STRIPE_WIDTH
+		right.default_color = col
+		right.add_point(p1 + perp * offset)
+		right.add_point(p2 + perp * offset)
+		right.z_index = 1
+		add_child(right)
+
+		pos      += CURB_STRIPE_LEN
+		is_white  = not is_white
 
 
 func _add_marker(pos: Vector2, label_text: String, col: Color) -> void:
