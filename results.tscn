@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://results_scene"]
+
+[ext_resource type="Script" path="res://results.gd" id="1_results"]
+
+[node name="Results" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_results")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.039, 0.027, 0.118, 1)
+
+[node name="Title" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -320.0
+offset_top = 30.0
+offset_right = 320.0
+offset_bottom = 80.0
+text = "RACE RESULTS"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 42
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="Subtitle" type="Label" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 78.0
+offset_right = 200.0
+offset_bottom = 108.0
+text = "Overland Park, KS"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
+
+[node name="ContentVBox" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -450.0
+offset_top = 118.0
+offset_right = 450.0
+offset_bottom = 570.0
+theme_override_constants/separation = 12
+
+[node name="ButtonRow" type="HBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -236.0
+offset_top = -82.0
+offset_right = 236.0
+offset_bottom = -26.0
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="RaceAgainButton" type="Button" parent="ButtonRow"]
+custom_minimum_size = Vector2(220, 52)
+text = "RACE AGAIN"
+theme_override_font_sizes/font_size = 20
+
+[node name="MenuButton" type="Button" parent="ButtonRow"]
+custom_minimum_size = Vector2(200, 52)
+text = "MAIN MENU"
+theme_override_font_sizes/font_size = 20
+
+[connection signal="pressed" from="ButtonRow/RaceAgainButton" to="." method="_on_race_again_pressed"]
+[connection signal="pressed" from="ButtonRow/MenuButton" to="." method="_on_main_menu_pressed"]
