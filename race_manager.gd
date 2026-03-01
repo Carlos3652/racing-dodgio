@@ -4,23 +4,16 @@ extends Node2D
 # Track waypoints — Overland Park map route
 # ---------------------------------------------------------------------------
 const TRACK_POINTS = [
-	Vector2(1000,  600),   # 0  START
-	Vector2(1000,  900),   # 1  south to 167th
-	Vector2( 200,  900),   # 2  west
-	Vector2(-500,  900),   # 3  west
-	Vector2(-900,  900),   # 4  corner
-	Vector2(-900, -200),   # 5  north (west edge)
-	Vector2(-900, -700),   # 6  continue north
-	Vector2(-200, -700),   # 7  east jog
-	Vector2( 600, -700),   # 8  east along 159th
-	Vector2(1200, -700),   # 9  continue east
-	Vector2(1200,    0),   # 10 south on Antioch
-	Vector2( 400,  300),   # 11 west into Wyngate
-	Vector2(-200,  300),   # 12 continue west
-	Vector2(-600,  600),   # 13 south Lakeshore
-	Vector2(-1000, 400),   # 14 northwest Mills Farm
-	Vector2(-1000,   0),   # 15 north
-	Vector2(-1200, -100),  # 16 FINISH
+	Vector2( 1200,    0),   # 0  START (right — car faces north at rotation=0)
+	Vector2( 1200,  -700),  # 1  north on right
+	Vector2(  500, -1300),  # 2  top-right
+	Vector2( -500, -1300),  # 3  top (west)
+	Vector2(-1200,  -700),  # 4  top-left
+	Vector2(-1200,     0),  # 5  far left
+	Vector2(-1200,   700),  # 6  bottom-left
+	Vector2( -500,  1300),  # 7  bottom (east)
+	Vector2(  400,  1300),  # 8  bottom-right
+	Vector2(  900,   700),  # 9  FINISH
 ]
 
 const ROAD_WIDTH     = 280.0
@@ -454,6 +447,7 @@ func _process(delta: float) -> void:
 		State.RACING:
 			race_time += delta
 			_update_hud(delta)
+			_constrain_to_road()
 			_check_player_collisions()  # check before respawn so newly-visible items can't hit same frame
 			_tick_respawns(delta)
 
@@ -477,7 +471,7 @@ func _check_player_collisions() -> void:
 					_play_griddy()
 					_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
 			"jeep":
-				if dist < 65:
+				if dist < 65 and player.crash_time <= 0:
 					player.apply_crash()
 					_flash_screen()
 					_hide_pickup(child, jeep_timers, JEEP_RESPAWN_SEC)
@@ -487,6 +481,15 @@ func _play_griddy() -> void:
 	if not griddy_anim.is_playing():
 		griddy_anim.play("griddy")
 	hype_timer = 5.0
+
+
+func _constrain_to_road() -> void:
+	var curve          = track_path.curve
+	var closest_offset = curve.get_closest_offset(player.position)
+	var closest_pt     = curve.sample_baked(closest_offset)
+	var dist           = player.position.distance_to(closest_pt)
+	if dist > ROAD_WIDTH * 0.48:
+		player.position = closest_pt + (player.position - closest_pt).normalized() * ROAD_WIDTH * 0.48
 
 
 func _flash_screen() -> void:
@@ -511,7 +514,7 @@ func _flash_place_up() -> void:
 	tw.tween_callback(func(): hud_place_up.visible = false)
 
 
-func _hide_pickup(node: Sprite2D, timer_dict: Dictionary, delay: float) -> void:
+func _hide_pickup(node: Node2D, timer_dict: Dictionary, delay: float) -> void:
 	node.visible = false
 	timer_dict[node] = delay
 

@@ -90,7 +90,7 @@ z_index = -10
 [node name="TrackPath" type="Path2D" parent="."]
 
 [node name="PlayerCar" type="Sprite2D" parent="."]
-position = Vector2(1000, 600)
+position = Vector2(1200, 0)
 scale = Vector2(0.35, 0.35)
 texture = ExtResource("3_car")
 script = ExtResource("2_player")
