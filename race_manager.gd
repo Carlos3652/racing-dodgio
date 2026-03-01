@@ -48,8 +48,7 @@ const JEEP_RESPAWN_SEC   = 14.0
 const COOKIE_OFFSETS = [0.18, 0.42, 0.65, 0.83]
 const JEEP_OFFSETS   = [0.28, 0.55, 0.75]
 
-const CAR_SCALE  = Vector2(0.35, 0.35)
-const JEEP_SCALE = Vector2(0.38, 0.38)
+const CAR_SCALE = Vector2(0.35, 0.35)
 
 # ---------------------------------------------------------------------------
 enum State { COUNTDOWN, RACING, FINISHED }
@@ -258,11 +257,10 @@ func _build_track_path() -> void:
 # ---------------------------------------------------------------------------
 # Cookies & Jeeps
 # ---------------------------------------------------------------------------
-const _StarScene = preload("res://star_pickup.gd")
+const _StarScene   = preload("res://star_pickup.gd")
+const _HazardScene = preload("res://hazard_block.gd")
 
 func _place_obstacles() -> void:
-	var jeep_tex = preload("res://Jeep.png")
-
 	for r in COOKIE_OFFSETS:
 		var pos  = track_path.curve.sample_baked(track_path.curve.get_baked_length() * r)
 		var star = _StarScene.new()
@@ -273,19 +271,13 @@ func _place_obstacles() -> void:
 		obstacles.append(star)
 
 	for r in JEEP_OFFSETS:
-		var pos = track_path.curve.sample_baked(track_path.curve.get_baked_length() * r)
-		var j = _make_sprite(jeep_tex, pos, JEEP_SCALE)
-		j.set_meta("kind", "jeep")
-		add_child(j)
-		obstacles.append(j)
-
-
-func _make_sprite(tex: Texture2D, pos: Vector2, sc: Vector2) -> Sprite2D:
-	var s = Sprite2D.new()
-	s.texture = tex
-	s.position = pos
-	s.scale = sc
-	return s
+		var pos    = track_path.curve.sample_baked(track_path.curve.get_baked_length() * r)
+		var hazard = _HazardScene.new()
+		hazard.position = pos
+		hazard.scale    = Vector2(1.6, 1.6)
+		hazard.set_meta("kind", "jeep")
+		add_child(hazard)
+		obstacles.append(hazard)
 
 
 # ---------------------------------------------------------------------------
