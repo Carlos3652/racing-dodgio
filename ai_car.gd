@@ -19,7 +19,7 @@ var noise_interval: float = 2.0
 signal finished(car_name: String)
 
 
-const _CAR_TEX = preload("res://Red Car.png")
+const _VisScene = preload("res://car_visual.gd")
 
 func _ready() -> void:
 	loop = false
@@ -28,12 +28,11 @@ func _ready() -> void:
 	noise_speed = randf_range(-40.0, 20.0)
 	noise_interval = randf_range(1.5, 4.0)
 
-	# Build the car sprite as a child
-	var sprite = Sprite2D.new()
-	sprite.texture = _CAR_TEX
-	sprite.scale = Vector2(0.25, 0.25)
-	sprite.modulate = car_color
-	add_child(sprite)
+	# Build the procedural car visual as a child
+	var vis = _VisScene.new()
+	vis.car_type  = car_label.to_lower()  # "Blue" -> "blue" etc.
+	vis.car_color = car_color
+	add_child(vis)
 
 
 func _process(delta: float) -> void:

@@ -19,6 +19,10 @@ var track_progress: float = 0.0  # cumulative forward distance — used for plac
 signal finished(car_name: String)
 
 
+func _ready() -> void:
+	texture = null  # visual handled by car_visual child added by race_manager
+
+
 func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("ui_cancel"):
 		GameData.clear()

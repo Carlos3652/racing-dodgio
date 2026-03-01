@@ -244,6 +244,12 @@ func _build_track_path() -> void:
 	player.finish_position = finish_pos
 	player.finished.connect(_on_car_finished)
 
+	# Attach procedural visual — player_car._ready() nulls the Sprite2D texture
+	var pvis = preload("res://car_visual.gd").new()
+	pvis.car_type  = "player"
+	pvis.car_color = Color(1.0, 0.133, 0.133, 1)
+	player.add_child(pvis)
+
 	for i in range(4):
 		var ai = preload("res://ai_car.gd").new()
 		ai.car_label = AI_NAMES[i]
