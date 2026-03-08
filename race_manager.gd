@@ -803,29 +803,48 @@ func _check_force_finish(delta: float) -> void:
 func _force_finish_remaining() -> void:
 	if _scene_changing:
 		return
-	# Force-finish any AI that hasn't crossed yet
+	# Write ALL remaining cars to finish_order synchronously BEFORE any await.
+	# Calling _on_car_finished() in a loop was wrong: the first call that hits
+	# finishers_count >= total_cars sets _scene_changing = true and suspends on
+	# await, causing every subsequent call in the loop to return early — leaving
+	# those cars absent from finish_order and the results screen empty.
 	for ai in ai_cars:
 		if not ai.has_finished:
 			ai.has_finished = true
 			ai.speed = 0.0
-			_on_car_finished(ai.car_label)
-	# Force-finish the player if they somehow haven't
+			_record_finish(ai.car_label)
 	if not player.has_finished:
 		player.has_finished = true
 		player.speed = 0.0
-		_on_car_finished("You")
+		_record_finish("You")
+	# All data is written — now trigger the single scene change.
+	_trigger_scene_change()
 
 
 # ---------------------------------------------------------------------------
 # Finish
 # ---------------------------------------------------------------------------
+
+## Called by car signals (player_car / ai_car emit `finished`).
+## Writes one entry to finish_order, then kicks off scene change when all done.
 func _on_car_finished(car_name: String) -> void:
 	if _scene_changing:
 		return
+	_record_finish(car_name)
+	if finishers_count >= total_cars:
+		_trigger_scene_change()
+
+
+## Writes a single finish entry, guarded against duplicates.
+## Does NOT await — safe to call in a loop.
+func _record_finish(car_name: String) -> void:
+	# Deduplicate: ignore if this car already has an entry (signal + force-finish race)
+	for entry in GameData.finish_order:
+		if entry.name == car_name:
+			return
 	GameData.finish_order.append({name = car_name, time = race_time})
 	finishers_count += 1
 
-	# Track when player finishes for force-finish timeout
 	if car_name == "You":
 		_player_finished = true
 
@@ -841,11 +860,16 @@ func _on_car_finished(car_name: String) -> void:
 		var bw = create_tween()
 		bw.tween_property(finish_banner, "modulate:a", 1.0, 0.3)
 
-	if finishers_count >= total_cars:
-		_scene_changing = true
-		state = State.FINISHED
-		await get_tree().create_timer(2.0).timeout
-		_change_scene("res://results.tscn")
+
+## Initiates the 2-second pause and scene transition to results.tscn.
+## Must only be called AFTER all finish_order writes are complete.
+func _trigger_scene_change() -> void:
+	if _scene_changing:
+		return
+	_scene_changing = true
+	state = State.FINISHED
+	await get_tree().create_timer(2.0).timeout
+	_change_scene("res://results.tscn")
 
 
 # ---------------------------------------------------------------------------

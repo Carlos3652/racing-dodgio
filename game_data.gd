@@ -1,7 +1,7 @@
 extends Node
 
 # Shared state passed between scenes
-var finish_order: Array[Dictionary] = []  # [{name, time, color_name}]
+var finish_order: Array[Dictionary] = []  # [{name: String, time: float}]
 
 # Car selection — set by main_menu, read by race_manager
 var player_color: Color = Color(1.0, 0.133, 0.133, 1)  # default red

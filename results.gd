@@ -547,4 +547,5 @@ func _on_race_again_pressed() -> void:
 
 
 func _on_main_menu_pressed() -> void:
+	GameData.clear()
 	_change_scene("res://main_menu.tscn")
