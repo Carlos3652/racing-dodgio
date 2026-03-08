@@ -45,14 +45,16 @@ func _input(event: InputEvent) -> void:
 
 
 func _skip_to_results() -> void:
-	# Kill all tweens
-	for child in get_children():
-		if child is Tween:
-			child.kill()
+	# Kill all active tweens owned by this node.
+	# In Godot 4, create_tween() tweens are SceneTree-managed and are NOT
+	# children of the node — get_children() will never find them.
+	for tw in get_tree().get_processed_tweens():
+		tw.kill()
 
 	# Clean up cinematic elements
 	if flash_rect:
-		flash_rect.color.a = 0.0
+		flash_rect.queue_free()
+		flash_rect = null
 	if reveal_container:
 		reveal_container.queue_free()
 		reveal_container = null
@@ -96,10 +98,18 @@ func _start_phase_reveal() -> void:
 	var winner = order[0]
 	var vp_size = get_viewport_rect().size
 
-	# Container for all reveal elements
+	# Fade the black flash_rect out now so the reveal is visible.
+	# flash_rect has z_index=50; we raise reveal_container above it (z=55)
+	# so content is never occluded.
+	if flash_rect:
+		var fade_tw = create_tween()
+		fade_tw.tween_property(flash_rect, "color:a", 0.0, 0.6).set_trans(Tween.TRANS_QUAD)
+		fade_tw.tween_callback(func(): if flash_rect: flash_rect.queue_free(); flash_rect = null)
+
+	# Container for all reveal elements — z_index MUST be above flash_rect (50)
 	reveal_container = Control.new()
 	reveal_container.set_anchors_preset(Control.PRESET_FULL_RECT)
-	reveal_container.z_index = 40
+	reveal_container.z_index = 55
 	add_child(reveal_container)
 
 	# ── "1ST PLACE" letter drop-in ────────────────────────────────────────
@@ -155,10 +165,14 @@ func _start_phase_reveal() -> void:
 	winner_car.modulate.a = 0.0
 	reveal_container.add_child(winner_car)
 
+	# Ensure rotation starts at 0 before tweening to TAU (one full clockwise spin).
+	# TRANS_SINE ease-in-out on 0→TAU produces identical start/end angle visually
+	# (car looks stationary). Use TRANS_BACK EASE_OUT instead for a visible overshoot.
+	winner_car.rotation = 0.0
 	var ctw = create_tween()
 	ctw.tween_interval(0.08 * reveal_text.length() + 0.1)
 	ctw.tween_property(winner_car, "modulate:a", 1.0, 0.3)
-	ctw.tween_property(winner_car, "rotation", TAU, 1.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	ctw.tween_property(winner_car, "rotation", TAU, 1.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	# ── Time display ──────────────────────────────────────────────────────
 	var time_lbl = Label.new()
@@ -208,18 +222,17 @@ func _start_phase_results() -> void:
 		return
 	phase = Phase.RESULTS
 
-	# Fade out the black overlay
+	# flash_rect was already faded out and freed at the start of Phase 2.
+	# Guard in case the player skipped during Phase 1 (flash_rect still alive).
 	if flash_rect:
-		var ftw = create_tween()
-		ftw.tween_property(flash_rect, "color:a", 0.0, 0.4)
-		ftw.tween_callback(func(): flash_rect.queue_free(); flash_rect = null)
+		flash_rect.queue_free()
+		flash_rect = null
 
-	# Shrink + move reveal container to top-right corner
+	# Fade out and free the reveal container
 	if reveal_container:
 		var rtw = create_tween()
-		rtw.set_parallel(true)
 		rtw.tween_property(reveal_container, "modulate:a", 0.0, 0.5)
-		rtw.chain().tween_callback(func():
+		rtw.tween_callback(func():
 			if reveal_container:
 				reveal_container.queue_free()
 				reveal_container = null
@@ -228,26 +241,32 @@ func _start_phase_results() -> void:
 	# Build and show results
 	_build_results()
 
-	# Slide everything in from below
+	# Snapshot the resting positions BEFORE we offset them — this prevents
+	# double-offset if _start_phase_results() is somehow called twice.
 	var vp_h = get_viewport_rect().size.y
 
-	$Title.position.y += vp_h * 0.5
-	$Subtitle.position.y += vp_h * 0.5
-	$ContentVBox.position.y += vp_h * 0.5
-	$ButtonRow.position.y += vp_h * 0.3
+	var title_rest    = $Title.position.y
+	var subtitle_rest = $Subtitle.position.y
+	var content_rest  = $ContentVBox.position.y
+	var buttons_rest  = $ButtonRow.position.y
+
+	$Title.position.y       = title_rest    + vp_h * 0.5
+	$Subtitle.position.y    = subtitle_rest + vp_h * 0.5
+	$ContentVBox.position.y = content_rest  + vp_h * 0.5
+	$ButtonRow.position.y   = buttons_rest  + vp_h * 0.3
 
 	var stw = create_tween()
 	stw.tween_property($Title, "modulate:a", 1.0, 0.3)
-	stw.parallel().tween_property($Title, "position:y", $Title.position.y - vp_h * 0.5, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	stw.parallel().tween_property($Title, "position:y", title_rest, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 	stw.parallel().tween_property($Subtitle, "modulate:a", 1.0, 0.3).set_delay(0.08)
-	stw.parallel().tween_property($Subtitle, "position:y", $Subtitle.position.y - vp_h * 0.5, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.08)
+	stw.parallel().tween_property($Subtitle, "position:y", subtitle_rest, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.08)
 
 	stw.parallel().tween_property($ContentVBox, "modulate:a", 1.0, 0.3).set_delay(0.16)
-	stw.parallel().tween_property($ContentVBox, "position:y", $ContentVBox.position.y - vp_h * 0.5, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.16)
+	stw.parallel().tween_property($ContentVBox, "position:y", content_rest, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.16)
 
 	stw.parallel().tween_property($ButtonRow, "modulate:a", 1.0, 0.3).set_delay(0.3)
-	stw.parallel().tween_property($ButtonRow, "position:y", $ButtonRow.position.y - vp_h * 0.3, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.3)
+	stw.parallel().tween_property($ButtonRow, "position:y", buttons_rest, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(0.3)
 
 	stw.tween_callback(func(): $ButtonRow/RaceAgainButton.grab_focus())
 
