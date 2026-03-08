@@ -85,6 +85,10 @@ var _scene_changing:  bool  = false
 var _last_place:      int   = 0
 var _esc_dialog_open: bool  = false
 var _finish_banner_shown: bool = false
+var _player_finished: bool  = false
+var _player_finish_timer: float = 0.0
+const FORCE_FINISH_DELAY: float = 10.0
+const RACE_TIMEOUT: float = 120.0
 
 # New HUD refs
 var esc_dialog:    Control
@@ -575,6 +579,7 @@ func _process(delta: float) -> void:
 			_constrain_to_road()
 			_check_player_collisions()  # check before respawn so newly-visible items can't hit same frame
 			_tick_respawns(delta)
+			_check_force_finish(delta)
 
 		State.FINISHED:
 			pass
@@ -687,6 +692,41 @@ func _tick_respawns(delta: float) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Force-finish safety — prevent infinite waiting
+# ---------------------------------------------------------------------------
+func _check_force_finish(delta: float) -> void:
+	if _scene_changing:
+		return
+
+	# After player finishes, start countdown to force-finish remaining AI
+	if _player_finished:
+		_player_finish_timer += delta
+		if _player_finish_timer >= FORCE_FINISH_DELAY:
+			_force_finish_remaining()
+			return
+
+	# Absolute race timeout — force everyone to finish
+	if race_time >= RACE_TIMEOUT:
+		_force_finish_remaining()
+
+
+func _force_finish_remaining() -> void:
+	if _scene_changing:
+		return
+	# Force-finish any AI that hasn't crossed yet
+	for ai in ai_cars:
+		if not ai.has_finished:
+			ai.has_finished = true
+			ai.speed = 0.0
+			_on_car_finished(ai.car_label)
+	# Force-finish the player if they somehow haven't
+	if not player.has_finished:
+		player.has_finished = true
+		player.speed = 0.0
+		_on_car_finished("You")
+
+
+# ---------------------------------------------------------------------------
 # Finish
 # ---------------------------------------------------------------------------
 func _on_car_finished(car_name: String) -> void:
@@ -694,6 +734,10 @@ func _on_car_finished(car_name: String) -> void:
 		return
 	GameData.finish_order.append({name = car_name, time = race_time})
 	finishers_count += 1
+
+	# Track when player finishes for force-finish timeout
+	if car_name == "You":
+		_player_finished = true
 
 	# Show player finish banner immediately when the player crosses the line
 	if car_name == "You" and not _finish_banner_shown:
