@@ -1,11 +1,11 @@
-[gd_scene format=3 uid="uid://results_scene"]
+[gd_scene format=3 uid="uid://circuit_standings_scene"]
 
-[ext_resource type="Script" path="res://results.gd" id="1_results"]
+[ext_resource type="Script" path="res://circuit_standings.gd" id="1_standings"]
 
-[node name="Results" type="Control"]
+[node name="CircuitStandings" type="Control"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-script = ExtResource("1_results")
+script = ExtResource("1_standings")
 
 [node name="Background" type="ColorRect" parent="."]
 anchor_right = 1.0
@@ -19,7 +19,7 @@ offset_left = -320.0
 offset_top = 30.0
 offset_right = 320.0
 offset_bottom = 80.0
-text = "RACE RESULTS"
+text = "CIRCUIT STANDINGS"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 42
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -27,9 +27,9 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 [node name="Subtitle" type="Label" parent="."]
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -200.0
+offset_left = -300.0
 offset_top = 78.0
-offset_right = 200.0
+offset_right = 300.0
 offset_bottom = 108.0
 text = ""
 horizontal_alignment = 1
@@ -39,10 +39,10 @@ theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
 [node name="ContentVBox" type="VBoxContainer" parent="."]
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -450.0
+offset_left = -400.0
 offset_top = 118.0
-offset_right = 450.0
-offset_bottom = 570.0
+offset_right = 400.0
+offset_bottom = 530.0
 theme_override_constants/separation = 12
 
 [node name="ButtonRow" type="HBoxContainer" parent="."]
@@ -57,21 +57,15 @@ offset_bottom = -26.0
 alignment = 1
 theme_override_constants/separation = 24
 
-[node name="RaceAgainButton" type="Button" parent="ButtonRow"]
-custom_minimum_size = Vector2(220, 52)
-text = "RACE AGAIN"
+[node name="NextRaceButton" type="Button" parent="ButtonRow"]
+custom_minimum_size = Vector2(260, 52)
+text = "NEXT RACE"
 theme_override_font_sizes/font_size = 20
 
-[node name="ReplayButton" type="Button" parent="ButtonRow"]
+[node name="QuitButton" type="Button" parent="ButtonRow"]
 custom_minimum_size = Vector2(200, 52)
-text = "VIEW REPLAY"
-theme_override_font_sizes/font_size = 20
-disabled = true
-
-[node name="MenuButton" type="Button" parent="ButtonRow"]
-custom_minimum_size = Vector2(200, 52)
-text = "MAIN MENU"
+text = "QUIT CIRCUIT"
 theme_override_font_sizes/font_size = 20
 
-[connection signal="pressed" from="ButtonRow/RaceAgainButton" to="." method="_on_race_again_pressed"]
-[connection signal="pressed" from="ButtonRow/MenuButton" to="." method="_on_main_menu_pressed"]
+[connection signal="pressed" from="ButtonRow/NextRaceButton" to="." method="_on_next_race"]
+[connection signal="pressed" from="ButtonRow/QuitButton" to="." method="_on_main_menu"]

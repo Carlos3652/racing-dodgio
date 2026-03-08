@@ -1,14 +1,16 @@
 extends Sprite2D
 
-const MAX_SPEED   = 350.0
+var MAX_SPEED: float     = 350.0
 const BOOST_SPEED = 500.0
 const ACCEL       = 600.0
 const BRAKE       = 900.0
 const COAST       = 300.0
 const TURN_SPEED  = 2.8
-const FINISH_DIST = 120.0
+const FINISH_DIST = 220.0  # must be > ROAD_WIDTH * 0.55 (currently 209px)
 const BUMP_SLOW_DURATION = 1.5
 const BUMP_SPEED_MULT = 0.4
+var STUN_DURATION: float = 2.0
+var BOOST_DURATION: float = 5.0
 
 var speed: float = 0.0
 var boost_time: float = 0.0
@@ -24,6 +26,9 @@ signal finished(car_name: String)
 
 func _ready() -> void:
 	texture = null  # visual handled by car_visual child added by race_manager
+	MAX_SPEED      = GameData.player_max_speed
+	STUN_DURATION  = GameData.player_stun_duration
+	BOOST_DURATION = GameData.player_boost_duration
 
 
 func _process(delta: float) -> void:
@@ -57,12 +62,16 @@ func _process(delta: float) -> void:
 	if speed > 0:
 		track_progress += speed * delta
 
-	if finish_position != Vector2.ZERO and position.distance_to(finish_position) < FINISH_DIST:
+	if finish_position != Vector2.ZERO and track_progress >= 500.0 and position.distance_to(finish_position) < FINISH_DIST:
 		_cross_finish()
 
 
 func apply_boost() -> void:
-	boost_time = 5.0
+	boost_time = BOOST_DURATION
+
+
+func apply_close_call_boost(duration: float) -> void:
+	boost_time = max(boost_time, duration)
 
 
 func apply_bump() -> void:
@@ -74,7 +83,7 @@ func apply_crash() -> void:
 	if crash_time > 0:
 		return
 	speed = 0.0
-	crash_time = 2.0
+	crash_time = STUN_DURATION
 
 
 func get_speed_kmh() -> int:

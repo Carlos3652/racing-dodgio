@@ -22,6 +22,9 @@ const TRACK_SNAP_PAD  = 16.0
 enum Phase { FLASH, REVEAL, RESULTS }
 var phase: Phase = Phase.FLASH
 var _skipped: bool = false
+var _results_built: bool = false
+var _tweens: Array = []  # tracked tweens for safe cleanup
+var _race_recorded: bool = false  # guard against double-click recording
 
 # Node refs built during cinematic
 var flash_rect: ColorRect
@@ -29,6 +32,12 @@ var reveal_container: Control
 var winner_car: Node2D
 var winner_title_hbox: HBoxContainer
 var results_layer: Control  # holds Title, Subtitle, ContentVBox, ButtonRow
+
+
+func _tracked_tween() -> Tween:
+	var tw = create_tween()
+	_tweens.append(tw)
+	return tw
 
 
 func _ready() -> void:
@@ -51,11 +60,11 @@ func _input(event: InputEvent) -> void:
 
 
 func _skip_to_results() -> void:
-	# Kill all active tweens owned by this node.
-	# In Godot 4, create_tween() tweens are SceneTree-managed and are NOT
-	# children of the node — get_children() will never find them.
-	for tw in get_tree().get_processed_tweens():
-		tw.kill()
+	# Kill only tweens we created (tracked in _tweens array)
+	for tw in _tweens:
+		if is_instance_valid(tw):
+			tw.kill()
+	_tweens.clear()
 
 	# Clean up cinematic elements
 	if flash_rect:
@@ -82,7 +91,7 @@ func _start_phase_flash() -> void:
 	flash_rect.z_index = 50
 	add_child(flash_rect)
 
-	var tw = create_tween()
+	var tw = _tracked_tween()
 	# Bright white flash → fade to black
 	tw.tween_property(flash_rect, "color", Color(1, 1, 1, 1), 0.05)
 	tw.tween_property(flash_rect, "color", Color(0, 0, 0, 1), 0.5).set_trans(Tween.TRANS_QUAD)
@@ -108,7 +117,7 @@ func _start_phase_reveal() -> void:
 	# flash_rect has z_index=50; we raise reveal_container above it (z=55)
 	# so content is never occluded.
 	if flash_rect:
-		var fade_tw = create_tween()
+		var fade_tw = _tracked_tween()
 		fade_tw.tween_property(flash_rect, "color:a", 0.0, 0.6).set_trans(Tween.TRANS_QUAD)
 		fade_tw.tween_callback(func(): if flash_rect: flash_rect.queue_free(); flash_rect = null)
 
@@ -140,10 +149,10 @@ func _start_phase_reveal() -> void:
 		ch.position.y = -60  # start above
 		winner_title_hbox.add_child(ch)
 
-		var tw = create_tween()
-		tw.tween_interval(0.08 * i)
-		tw.tween_property(ch, "position:y", 0.0, 0.3).set_trans(Tween.TRANS_BACK)
-		tw.parallel().tween_property(ch, "modulate:a", 1.0, 0.2)
+		var ltw = _tracked_tween()
+		ltw.tween_interval(0.08 * i)
+		ltw.tween_property(ch, "position:y", 0.0, 0.3).set_trans(Tween.TRANS_BACK)
+		ltw.parallel().tween_property(ch, "modulate:a", 1.0, 0.2)
 
 	# ── Winner name below ─────────────────────────────────────────────────
 	var name_lbl = Label.new()
@@ -158,7 +167,7 @@ func _start_phase_reveal() -> void:
 	name_lbl.modulate.a = 0.0
 	reveal_container.add_child(name_lbl)
 
-	var ntw = create_tween()
+	var ntw = _tracked_tween()
 	ntw.tween_interval(0.08 * reveal_text.length() + 0.2)
 	ntw.tween_property(name_lbl, "modulate:a", 1.0, 0.3)
 
@@ -175,7 +184,7 @@ func _start_phase_reveal() -> void:
 	# TRANS_SINE ease-in-out on 0→TAU produces identical start/end angle visually
 	# (car looks stationary). Use TRANS_BACK EASE_OUT instead for a visible overshoot.
 	winner_car.rotation = 0.0
-	var ctw = create_tween()
+	var ctw = _tracked_tween()
 	ctw.tween_interval(0.08 * reveal_text.length() + 0.1)
 	ctw.tween_property(winner_car, "modulate:a", 1.0, 0.3)
 	ctw.tween_property(winner_car, "rotation", TAU, 1.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -193,7 +202,7 @@ func _start_phase_reveal() -> void:
 	time_lbl.modulate.a = 0.0
 	reveal_container.add_child(time_lbl)
 
-	var ttw = create_tween()
+	var ttw = _tracked_tween()
 	ttw.tween_interval(0.08 * reveal_text.length() + 0.8)
 	ttw.tween_property(time_lbl, "modulate:a", 1.0, 0.3)
 
@@ -210,12 +219,12 @@ func _start_phase_reveal() -> void:
 	reveal_container.add_child(skip_lbl)
 
 	# Blink the skip hint
-	var stw = create_tween().set_loops()
-	stw.tween_property(skip_lbl, "modulate:a", 0.3, 0.6)
-	stw.tween_property(skip_lbl, "modulate:a", 1.0, 0.6)
+	var blink_tw = _tracked_tween().set_loops()
+	blink_tw.tween_property(skip_lbl, "modulate:a", 0.3, 0.6)
+	blink_tw.tween_property(skip_lbl, "modulate:a", 1.0, 0.6)
 
 	# Auto-advance to Phase 3 after reveal completes
-	var advance_tw = create_tween()
+	var advance_tw = _tracked_tween()
 	advance_tw.tween_interval(3.5)
 	advance_tw.tween_callback(_start_phase_results)
 
@@ -236,7 +245,7 @@ func _start_phase_results() -> void:
 
 	# Fade out and free the reveal container
 	if reveal_container:
-		var rtw = create_tween()
+		var rtw = _tracked_tween()
 		rtw.tween_property(reveal_container, "modulate:a", 0.0, 0.5)
 		rtw.tween_callback(func():
 			if reveal_container:
@@ -261,7 +270,7 @@ func _start_phase_results() -> void:
 	$ContentVBox.position.y = content_rest  + vp_h * 0.5
 	$ButtonRow.position.y   = buttons_rest  + vp_h * 0.3
 
-	var stw = create_tween()
+	var stw = _tracked_tween()
 	stw.tween_property($Title, "modulate:a", 1.0, 0.3)
 	stw.parallel().tween_property($Title, "position:y", title_rest, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
@@ -296,6 +305,9 @@ func _show_results_instant() -> void:
 # BUILD RESULTS CARDS (shared by cinematic + skip)
 # ═════════════════════════════════════════════════════════════════════════
 func _build_results() -> void:
+	if _results_built:
+		return
+	_results_built = true
 	var order = GameData.finish_order
 	var vbox  = $ContentVBox
 
@@ -356,6 +368,8 @@ func _build_results() -> void:
 		right_col.add_child(_make_stat_row("Car Bumps", str(stats.get("bumps", 0))))
 		right_col.add_child(_make_stat_row("Boost Time", "%d%%" % int(stats.get("boost_pct", 0.0))))
 		right_col.add_child(_make_stat_row("Lead Changes", str(stats.get("lead_changes", 0))))
+		if stats.get("close_calls", 0) > 0:
+			right_col.add_child(_make_stat_row("Close Calls", str(stats.get("close_calls", 0))))
 
 	# Divider before track snapshot
 	var div2 = ColorRect.new()
@@ -373,6 +387,51 @@ func _build_results() -> void:
 	# Track snapshot — miniature track with colored dots
 	var snapshot = _make_track_snapshot()
 	right_col.add_child(snapshot)
+
+	# ── Update subtitle with track name ───────────────────────────────────
+	var track_name = GameData.TRACKS[GameData.current_track_index].name if GameData.current_track_index < GameData.TRACKS.size() else "Unknown"
+	var diff_label = " [%s]" % GameData.difficulty.to_upper() if GameData.difficulty != "normal" else ""
+	if GameData.circuit_mode:
+		var race_num = GameData.circuit_race + 1
+		$Subtitle.text = "Race %d/5 — %s%s" % [race_num, track_name, diff_label]
+		$ButtonRow/RaceAgainButton.text = "STANDINGS"
+		$ButtonRow/ReplayButton.visible = false
+	else:
+		$Subtitle.text = track_name + diff_label
+
+	# ── Save personal best records ────────────────────────────────────────
+	var player_pos = 6
+	var player_time = 0.0
+	for i in range(order.size()):
+		if order[i].name == "You":
+			player_pos = i + 1
+			player_time = order[i].time
+			break
+	var stars_collected = stats.get("stars", 0) if not stats.is_empty() else 0
+
+	# Read previous best BEFORE recording (so it reflects the old value)
+	var prev_best = Records.get_best_time(track_name)
+
+	# Only record if player actually raced (time > 0)
+	var is_pb = false
+	if player_time > 0.0:
+		is_pb = Records.record_race(track_name, player_pos, player_time, stars_collected)
+	if is_pb:
+		right_col.add_child(_make_stat_row("", ""))  # spacer
+		var pb_lbl = Label.new()
+		pb_lbl.text = "PERSONAL BEST!"
+		pb_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		pb_lbl.add_theme_font_size_override("font_size", 20)
+		pb_lbl.add_theme_color_override("font_color", COL_GOLD)
+		right_col.add_child(pb_lbl)
+		# Pulse animation
+		var pb_tw = _tracked_tween().set_loops(3)
+		pb_tw.tween_property(pb_lbl, "modulate:a", 0.3, 0.4)
+		pb_tw.tween_property(pb_lbl, "modulate:a", 1.0, 0.4)
+
+	# Show previous best time if available
+	if prev_best < INF:
+		right_col.add_child(_make_stat_row("Best Time", _fmt_time(prev_best)))
 
 	# ── Style buttons ─────────────────────────────────────────────────────
 	_style_button($ButtonRow/RaceAgainButton, true)
@@ -514,11 +573,13 @@ func _make_lower_row(entry: Dictionary, idx: int) -> HBoxContainer:
 	row.add_child(swatch)
 
 	var lbl = Label.new()
-	lbl.text = "  %s  —  %s   %s   Better luck next time!" % [
-		_place_str(idx + 1), entry.name, _fmt_time(entry.time)
+	var is_player = entry.name == "You"
+	lbl.text = "  %s  —  %s   %s%s" % [
+		_place_str(idx + 1), entry.name, _fmt_time(entry.time),
+		"" if is_player else "   Better luck next time!"
 	]
 	lbl.add_theme_font_size_override("font_size", 18)
-	lbl.add_theme_color_override("font_color", COL_MUTED)
+	lbl.add_theme_color_override("font_color", GameData.player_color if is_player else COL_MUTED)
 	row.add_child(lbl)
 	return row
 
@@ -700,7 +761,8 @@ func _style_replay_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("disabled", sbox)
 	btn.add_theme_color_override("font_color",          COL_CYAN * Color(1, 1, 1, 0.4))
 	btn.add_theme_color_override("font_disabled_color",  COL_CYAN * Color(1, 1, 1, 0.4))
-	btn.tooltip_text = "Coming Soon"
+	btn.text = "VIEW REPLAY\n(Coming Soon)"
+	btn.add_theme_font_size_override("font_size", 14)
 
 
 # ── Scene fade transition helper ──────────────────────────────────────────
@@ -750,16 +812,36 @@ func _place_str(n: int) -> String:
 
 
 func _fmt_time(t: float) -> String:
-	return "%d:%05.2f" % [int(t) / 60, fmod(t, 60.0)]
+	var secs = fmod(t, 60.0)
+	if secs >= 59.995:  # prevent rounding to :60.00
+		secs = 0.0
+		t += 1.0
+	return "%d:%05.2f" % [int(t) / 60, secs]
 
 
 # ── Button signal handlers ────────────────────────────────────────────────
 
 func _on_race_again_pressed() -> void:
-	GameData.clear()
-	_change_scene("res://main.tscn")
+	if _race_recorded:
+		return
+	if GameData.circuit_mode:
+		_race_recorded = true
+		GameData.record_circuit_race()
+		GameData.clear()  # per-race reset — prevents stale finish_order carrying into next race
+		_change_scene("res://circuit_standings.tscn")
+	else:
+		GameData.clear()
+		_change_scene("res://main.tscn")
 
 
 func _on_main_menu_pressed() -> void:
-	GameData.clear()
+	if _race_recorded:
+		GameData.clear_circuit()
+		_change_scene("res://main_menu.tscn")
+		return
+	# Record current race before wiping if mid-circuit (so standings aren't lost)
+	if GameData.circuit_mode and not GameData.finish_order.is_empty():
+		_race_recorded = true
+		GameData.record_circuit_race()
+	GameData.clear_circuit()
 	_change_scene("res://main_menu.tscn")

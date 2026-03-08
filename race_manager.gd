@@ -1,25 +1,14 @@
 extends Node2D
 
 # ---------------------------------------------------------------------------
-# Track waypoints — Overland Park map route
+# Track waypoints — loaded dynamically from GameData.TRACKS
 # ---------------------------------------------------------------------------
-const TRACK_POINTS = [
-	Vector2( 1200,    0),   # 0  START (right — car faces north at rotation=0)
-	Vector2( 1200,  -700),  # 1  north on right
-	Vector2(  500, -1300),  # 2  top-right
-	Vector2( -500, -1300),  # 3  top (west)
-	Vector2(-1200,  -700),  # 4  top-left
-	Vector2(-1200,     0),  # 5  far left
-	Vector2(-1200,   700),  # 6  bottom-left
-	Vector2( -500,  1300),  # 7  bottom (east)
-	Vector2(  400,  1300),  # 8  bottom-right
-	Vector2(  900,   700),  # 9  FINISH
-]
+var TRACK_POINTS: Array = []
 
-const ROAD_WIDTH     = 280.0
+const ROAD_WIDTH     = 380.0
 const BUMP_DIST      = 55.0   # car-to-car collision distance
 const BUMP_COOLDOWN  = 2.0    # seconds between bump checks per pair
-const SHOULDER_W     = 340.0
+const SHOULDER_W     = 500.0  # wider shoulder for visible off-road grass
 const ROAD_COLOR     = Color(0.172, 0.172, 0.220, 1)
 const SHOULDER_COLOR = Color(0.102, 0.180, 0.102, 1)
 const DASH_COLOR     = Color(1.000, 0.878, 0.200, 1)
@@ -27,8 +16,8 @@ const DASH_LEN       = 90.0
 const GAP_LEN        = 55.0
 const CURB_WHITE     = Color(0.941, 0.929, 0.878, 1)
 const CURB_RED       = Color(0.800, 0.133, 0.000, 1)
-const CURB_STRIPE_LEN   = 40.0
-const CURB_STRIPE_WIDTH = 18.0
+const CURB_STRIPE_LEN   = 50.0
+const CURB_STRIPE_WIDTH = 24.0
 
 const AI_COLORS = [
 	Color(0.2,  0.5,  1.0),
@@ -37,6 +26,14 @@ const AI_COLORS = [
 	Color(0.85, 0.2,  0.85),
 ]
 const AI_NAMES = ["Blue", "Green", "Orange", "Purple"]
+
+# AI Personality Archetypes
+const AI_PERSONALITIES = {
+	"Blue":   {bump_radius_bonus = 10.0, bump_slow_duration = 1.5},                          # "The Blocker" — wider bump zone
+	"Green":  {base_speed_bonus = 20.0, noise_variance = 8.0},                                 # "The Drifter" — faster, moderate noise
+	"Orange": {bump_slow_duration = 0.75},                                                     # "The Tank" — shrugs off bumps
+	"Purple": {base_speed_bonus = 30.0, boost_duration = 3.5},                                 # "The Phantom" — fastest, shorter boost
+}
 
 const COOKIE_RESPAWN_SEC = 10.0
 const JEEP_RESPAWN_SEC   = 14.0
@@ -63,6 +60,7 @@ var cookie_timers: Dictionary = {}
 var jeep_timers:   Dictionary = {}
 var bump_cooldowns: Dictionary = {}  # pair key -> seconds remaining
 var obstacles: Array = []  # all cookie + jeep sprites — avoids scanning get_children() every frame
+var _ai_star_radius: float = 55.0  # difficulty-adjusted in _ready()
 
 # HUD node refs
 var hud_place_numeral: Label
@@ -101,6 +99,8 @@ var _stat_boost_frames: int = 0
 var _stat_total_frames: int = 0
 var _stat_lead_changes: int = 0
 var _stat_last_leader: String = ""
+var _stat_close_calls: int = 0
+var _close_call_cooldown: float = 0.0
 
 # New HUD refs
 var esc_dialog:    Control
@@ -120,6 +120,19 @@ var _hype_style:   StyleBoxFlat
 
 
 func _ready() -> void:
+	# Load track points from GameData based on current_track_index
+	var idx = GameData.current_track_index
+	if idx >= 0 and idx < GameData.TRACKS.size():
+		TRACK_POINTS = GameData.TRACKS[idx].points.duplicate()
+	else:
+		TRACK_POINTS = GameData.TRACKS[0].points.duplicate()
+
+	# Difficulty-adjusted AI star pickup radius
+	match GameData.difficulty:
+		"easy":  _ai_star_radius = 50.0
+		"hard":  _ai_star_radius = 70.0
+		_:       _ai_star_radius = 55.0
+
 	_create_bar_styles()
 	_build_road()
 	_build_track_path()
@@ -168,15 +181,28 @@ func _build_road() -> void:
 	for p in TRACK_POINTS:
 		road.add_point(p)
 
-	# Build a shared curve used by dashes and curb stripes
+	# Build a shared curve used by dashes, stripes, arrows, and lane dividers
 	var curve = Curve2D.new()
 	for p in TRACK_POINTS:
 		curve.add_point(p)
 
 	_build_dashes(curve)
+	_build_lane_dividers(curve)
 	_build_curb_stripes(curve)
-	_add_marker(TRACK_POINTS[0], "START", Color(0.1, 0.95, 0.1))
+	_build_direction_arrows(curve)
+	_build_corner_markers()
+
+	# Start gate with posts
+	var start_dir = (TRACK_POINTS[1] - TRACK_POINTS[0]).normalized()
+	_add_start_gate(TRACK_POINTS[0], start_dir)
+
+	# Finish line with posts
 	_add_finish_checkered(TRACK_POINTS[TRACK_POINTS.size() - 1])
+
+	# Figure Eight crossover marker (by track name, not hardcoded index)
+	var idx_track = GameData.current_track_index
+	if idx_track >= 0 and idx_track < GameData.TRACKS.size() and GameData.TRACKS[idx_track].name == "Figure Eight":
+		_build_figure_eight_crossover()
 
 
 func _build_dashes(curve: Curve2D) -> void:
@@ -237,44 +263,173 @@ func _build_curb_stripes(curve: Curve2D) -> void:
 		is_white  = not is_white
 
 
-func _add_marker(pos: Vector2, label_text: String, col: Color) -> void:
+func _build_lane_dividers(curve: Curve2D) -> void:
+	var offsets_arr = [-ROAD_WIDTH / 3.0, ROAD_WIDTH / 3.0]
+	var total_len = curve.get_baked_length()
+	for lane_off in offsets_arr:
+		var pos = 30.0
+		var drawing = true
+		while pos < total_len - 30.0:
+			if drawing:
+				var t1 = curve.sample_baked(pos)
+				var t2 = curve.sample_baked(min(pos + 45.0, total_len))
+				# Compute perpendicular at each endpoint independently (prevents drift on curves)
+				var d1 = (curve.sample_baked(min(pos + 1.0, total_len)) - t1).normalized()
+				var p1 = Vector2(-d1.y, d1.x)
+				var d2 = (curve.sample_baked(min(pos + 46.0, total_len)) - t2).normalized()
+				var p2 = Vector2(-d2.y, d2.x)
+				var line = Line2D.new()
+				line.width = 6.0
+				line.default_color = Color(0.88, 0.88, 0.88, 0.40)
+				line.add_point(t1 + p1 * lane_off)
+				line.add_point(t2 + p2 * lane_off)
+				line.z_index = 2
+				add_child(line)
+				pos += 45.0
+			else:
+				pos += 35.0
+			drawing = not drawing
+
+
+func _build_direction_arrows(curve: Curve2D) -> void:
+	var total_len = curve.get_baked_length()
+	var pos = 200.0
+	while pos < total_len - 200.0:
+		var center = curve.sample_baked(pos)
+		var ahead  = curve.sample_baked(min(pos + 20.0, total_len))
+		var dir = (ahead - center).normalized()
+		var perp = Vector2(-dir.y, dir.x)
+		var tip = center + dir * 45.0
+		var bl  = center - dir * 15.0 + perp * 28.0
+		var br  = center - dir * 15.0 - perp * 28.0
+		var arrow = Polygon2D.new()
+		arrow.polygon = PackedVector2Array([tip, bl, br])
+		arrow.color   = Color(1.0, 0.85, 0.10, 0.30)
+		arrow.z_index = 2
+		add_child(arrow)
+		pos += 400.0
+
+
+func _build_corner_markers() -> void:
+	var pts = TRACK_POINTS
+	for i in range(1, pts.size() - 1):
+		var a = pts[i - 1]
+		var b = pts[i]
+		var c = pts[i + 1] if i + 1 < pts.size() else pts[0]
+		var in_dir  = (b - a).normalized()
+		var out_dir = (c - b).normalized()
+		var angle   = in_dir.angle_to(out_dir)
+		# Only mark sharp corners (more than 35 degrees)
+		if abs(angle) < deg_to_rad(35.0):
+			continue
+		var perp = Vector2(-in_dir.y, in_dir.x)
+		var inside = sign(angle)
+		var marker_pos = b + perp * (ROAD_WIDTH * 0.35 * inside)
+		var td = out_dir
+		var tp = Vector2(-td.y, td.x)
+		var dot = Polygon2D.new()
+		dot.polygon = PackedVector2Array([
+			marker_pos + td * 18.0,
+			marker_pos - td * 10.0 + tp * 12.0,
+			marker_pos - td * 10.0 - tp * 12.0,
+		])
+		dot.color   = Color(1.0, 0.45, 0.10, 0.75)
+		dot.z_index = 3
+		add_child(dot)
+
+
+func _build_figure_eight_crossover() -> void:
+	# Find the approximate crossover center — midpoint of the track
+	var mid_idx = TRACK_POINTS.size() / 2
+	var cross_center = TRACK_POINTS[mid_idx] if mid_idx < TRACK_POINTS.size() else Vector2.ZERO
+	var sz = ROAD_WIDTH * 0.55
+	# Yellow diamond marker on the road surface
+	var diamond = Polygon2D.new()
+	diamond.polygon = PackedVector2Array([
+		cross_center + Vector2(0, -sz * 0.5),
+		cross_center + Vector2(sz * 0.4, 0),
+		cross_center + Vector2(0, sz * 0.5),
+		cross_center + Vector2(-sz * 0.4, 0),
+	])
+	diamond.color   = Color(1.0, 0.85, 0.10, 0.50)
+	diamond.z_index = 3
+	add_child(diamond)
+	# "X" label at center
 	var lbl = Label.new()
-	lbl.text = label_text
-	lbl.position = pos + Vector2(-50, -70)
-	lbl.add_theme_font_size_override("font_size", 30)
-	lbl.add_theme_color_override("font_color", col)
+	lbl.text = "X"
+	lbl.add_theme_font_size_override("font_size", 48)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.10, 0.70))
+	lbl.position = cross_center + Vector2(-18, -32)
+	lbl.z_index  = 4
 	add_child(lbl)
 
-	var line = Line2D.new()
-	line.width = ROAD_WIDTH
-	line.default_color = Color(col.r, col.g, col.b, 0.35)
-	line.add_point(pos + Vector2(-20, 0))
-	line.add_point(pos + Vector2(20, 0))
-	add_child(line)
+
+func _add_start_gate(pos: Vector2, dir: Vector2) -> void:
+	var perp = Vector2(-dir.y, dir.x)
+	var half = ROAD_WIDTH * 0.5 + 12.0
+
+	# Full-width green stripe painted on asphalt
+	for row_i in [-1, 0]:
+		var stripe = Polygon2D.new()
+		var row_offset = dir * float(row_i) * 18.0
+		var c0 = pos + row_offset + perp * (-half)
+		var c1 = pos + row_offset + perp * ( half)
+		var c2 = pos + row_offset + dir * 18.0 + perp * ( half)
+		var c3 = pos + row_offset + dir * 18.0 + perp * (-half)
+		stripe.polygon = PackedVector2Array([c0, c1, c2, c3])
+		stripe.color   = Color(0.08, 0.80, 0.20, 0.70)
+		stripe.z_index = 3
+		add_child(stripe)
+
+	# Left post (small square straddling the road edge)
+	var lc = pos + perp * (-(half + 10.0))
+	var lpost = Polygon2D.new()
+	lpost.polygon = PackedVector2Array([
+		lc + perp * (-10.0) + dir * (-10.0), lc + perp * (10.0) + dir * (-10.0),
+		lc + perp * (10.0) + dir * (10.0), lc + perp * (-10.0) + dir * (10.0),
+	])
+	lpost.color   = Color(0.08, 0.80, 0.20, 1.0)
+	lpost.z_index = 4
+	add_child(lpost)
+
+	# Right post
+	var rc = pos + perp * (half + 10.0)
+	var rpost = Polygon2D.new()
+	rpost.polygon = PackedVector2Array([
+		rc + perp * (-10.0) + dir * (-10.0), rc + perp * (10.0) + dir * (-10.0),
+		rc + perp * (10.0) + dir * (10.0), rc + perp * (-10.0) + dir * (10.0),
+	])
+	rpost.color   = Color(0.08, 0.80, 0.20, 1.0)
+	rpost.z_index = 4
+	add_child(rpost)
+
+	# "START" label — larger, centered above gate
+	var lbl = Label.new()
+	lbl.text = "START"
+	lbl.add_theme_font_size_override("font_size", 42)
+	lbl.add_theme_color_override("font_color", Color(0.08, 0.90, 0.25, 1.0))
+	lbl.position = pos + dir * (-50.0) + perp * (-52.0)
+	lbl.z_index  = 5
+	add_child(lbl)
 
 
 func _add_finish_checkered(pos: Vector2) -> void:
-	var lbl = Label.new()
-	lbl.text = "FINISH"
-	lbl.position = pos + Vector2(-50, -70)
-	lbl.add_theme_font_size_override("font_size", 30)
-	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
-	add_child(lbl)
-
 	# Direction of road at finish (from prev waypoint to finish)
 	var prev = TRACK_POINTS[TRACK_POINTS.size() - 2]
 	var dir  = (pos - prev).normalized()
-	var perp = Vector2(-dir.y, dir.x)  # perpendicular to road direction
+	var perp = Vector2(-dir.y, dir.x)
+	var half = ROAD_WIDTH * 0.5 + 12.0
 
-	const COLS = 8
-	const ROWS = 2
+	# Checkerboard pattern
+	const COLS = 10
+	const ROWS = 3
 	var cell_w = ROAD_WIDTH / float(COLS)
-	var cell_h = 22.0
+	var cell_h = 20.0
 
-	for col in range(COLS):
-		for row in range(ROWS):
-			var col_t  = (float(col) / COLS) - 0.5 + (0.5 / COLS)
-			var row_t  = (float(row) - float(ROWS) * 0.5 + 0.5) * cell_h
+	for col_i in range(COLS):
+		for row_i in range(ROWS):
+			var col_t  = (float(col_i) / COLS) - 0.5 + (0.5 / COLS)
+			var row_t  = (float(row_i) - float(ROWS) * 0.5 + 0.5) * cell_h
 			var center = pos + perp * (col_t * ROAD_WIDTH) + dir * row_t
 
 			var hw = cell_w * 0.5
@@ -286,9 +441,40 @@ func _add_finish_checkered(pos: Vector2) -> void:
 
 			var poly = Polygon2D.new()
 			poly.polygon = PackedVector2Array([c0, c1, c2, c3])
-			poly.color   = Color(1, 1, 1, 0.95) if (col + row) % 2 == 0 else Color(0, 0, 0, 0.95)
+			poly.color   = Color(1, 1, 1, 0.95) if (col_i + row_i) % 2 == 0 else Color(0, 0, 0, 0.95)
 			poly.z_index = 3
 			add_child(poly)
+
+	# Left post (small square)
+	var lc = pos + perp * (-(half + 10.0))
+	var lpost = Polygon2D.new()
+	lpost.polygon = PackedVector2Array([
+		lc + perp * (-10.0) + dir * (-10.0), lc + perp * (10.0) + dir * (-10.0),
+		lc + perp * (10.0) + dir * (10.0), lc + perp * (-10.0) + dir * (10.0),
+	])
+	lpost.color   = Color(0.95, 0.95, 0.95, 1.0)
+	lpost.z_index = 4
+	add_child(lpost)
+
+	# Right post
+	var rc = pos + perp * (half + 10.0)
+	var rpost = Polygon2D.new()
+	rpost.polygon = PackedVector2Array([
+		rc + perp * (-10.0) + dir * (-10.0), rc + perp * (10.0) + dir * (-10.0),
+		rc + perp * (10.0) + dir * (10.0), rc + perp * (-10.0) + dir * (10.0),
+	])
+	rpost.color   = Color(0.95, 0.95, 0.95, 1.0)
+	rpost.z_index = 4
+	add_child(rpost)
+
+	# "FINISH" label — larger
+	var lbl = Label.new()
+	lbl.text = "FINISH"
+	lbl.add_theme_font_size_override("font_size", 42)
+	lbl.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	lbl.position = pos + dir * (-55.0) + perp * (-60.0)
+	lbl.z_index  = 5
+	add_child(lbl)
 
 
 # ---------------------------------------------------------------------------
@@ -331,6 +517,8 @@ func _build_track_path() -> void:
 	player = $PlayerCar
 	player.scale = CAR_SCALE
 	player.position = TRACK_POINTS[0] + start_perp * lane_offsets[player_lane_idx]
+	# Face the player in the direction of travel (car draws pointing UP = -Y)
+	player.rotation = start_dir.angle() + PI / 2.0
 	player.finish_position = finish_pos
 	player.finished.connect(_on_car_finished)
 	camera = $PlayerCar/Camera2D
@@ -353,6 +541,9 @@ func _build_track_path() -> void:
 		ai.progress     = 10.0  # slight offset so they're not at exact point 0
 		ai.lane_offset  = lane_offsets[ai_lane]
 		ai.scale        = CAR_SCALE
+		# Apply personality archetype
+		if AI_PERSONALITIES.has(ai_roster[i].name):
+			ai.personality = AI_PERSONALITIES[ai_roster[i].name].duplicate()
 		ai.finished.connect(_on_car_finished)
 		track_path.add_child(ai)
 		ai_cars.append(ai)
@@ -368,7 +559,13 @@ const _StarScene   = preload("res://star_pickup.gd")
 const _HazardScene = preload("res://hazard_block.gd")
 
 func _place_obstacles() -> void:
-	for r in COOKIE_OFFSETS:
+	# Read track-specific offsets, falling back to defaults
+	var idx = GameData.current_track_index
+	var track_data = GameData.TRACKS[idx] if idx >= 0 and idx < GameData.TRACKS.size() else {}
+	var star_offs = track_data.get("star_offsets", COOKIE_OFFSETS)
+	var jeep_offs = track_data.get("jeep_offsets", JEEP_OFFSETS)
+
+	for r in star_offs:
 		var pos  = track_path.curve.sample_baked(track_path.curve.get_baked_length() * r)
 		var star = _StarScene.new()
 		star.position = pos
@@ -377,7 +574,7 @@ func _place_obstacles() -> void:
 		add_child(star)
 		obstacles.append(star)
 
-	for r in JEEP_OFFSETS:
+	for r in jeep_offs:
 		var pos    = track_path.curve.sample_baked(track_path.curve.get_baked_length() * r)
 		var hazard = _HazardScene.new()
 		hazard.position = pos
@@ -516,8 +713,11 @@ func _update_hud(delta: float) -> void:
 		_flash_place_up()
 	_last_place = place
 
-	var mins = int(race_time) / 60
 	var secs = fmod(race_time, 60.0)
+	var mins = int(race_time) / 60
+	if secs >= 59.995:
+		secs = 0.0
+		mins += 1
 	hud_timer.text = "%d:%05.2f" % [mins, secs]
 	hud_speed.text = "%d km/h" % player.get_speed_kmh()
 
@@ -543,11 +743,11 @@ func _update_hud(delta: float) -> void:
 
 	# Boost / stun bar at screen bottom
 	if player.crash_time > 0:
-		boost_bar.max_value = 2.0
+		boost_bar.max_value = player.STUN_DURATION
 		boost_bar.value = player.crash_time
 		boost_bar.add_theme_stylebox_override("fill", _crash_style)
 	elif player.boost_time > 0:
-		boost_bar.max_value = 5.0
+		boost_bar.max_value = player.BOOST_DURATION
 		boost_bar.value = player.boost_time
 		boost_bar.add_theme_stylebox_override("fill", _boost_style)
 	else:
@@ -564,10 +764,15 @@ func _update_hud(delta: float) -> void:
 
 
 func _get_player_place() -> int:
+	# Once player has finished, lock to their recorded finish position
+	if player.has_finished:
+		for i in range(GameData.finish_order.size()):
+			if GameData.finish_order[i].name == "You":
+				return i + 1
+		return 1
 	var player_prog = player.track_progress
 	var ahead = 0
 	for ai in ai_cars:
-		# Finished AI cars are always "ahead" — treat their progress as infinite
 		var ai_prog = INF if ai.has_finished else ai.progress
 		if ai_prog > player_prog:
 			ahead += 1
@@ -614,6 +819,8 @@ func _process(delta: float) -> void:
 
 		State.RACING:
 			race_time += delta
+			if _close_call_cooldown > 0:
+				_close_call_cooldown -= delta
 			_update_hud(delta)
 			_constrain_to_road()
 			_check_player_collisions()  # check before respawn so newly-visible items can't hit same frame
@@ -649,6 +856,11 @@ func _check_player_collisions() -> void:
 					_flash_screen()
 					_hide_pickup(child, jeep_timers, JEEP_RESPAWN_SEC)
 					_stat_stuns += 1
+				elif dist >= 65 and dist < 90 and player.crash_time <= 0 and _close_call_cooldown <= 0:
+					_close_call_cooldown = 2.0
+					player.apply_close_call_boost(1.5)
+					_sparkle_close_call(child.position)
+					_stat_close_calls += 1
 
 	# --- Option D: AI cars can also collect stars ---
 	_check_ai_collisions()
@@ -665,7 +877,7 @@ func _check_ai_collisions() -> void:
 			var dist = ai_pos.distance_to(child.position)
 			match child.get_meta("kind"):
 				"cookie":
-					if dist < 60:
+					if dist < _ai_star_radius:
 						ai.apply_boost()
 						_sparkle_at(child.position)
 						_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
@@ -693,7 +905,8 @@ func _check_car_bumps(delta: float) -> void:
 			if bump_cooldowns.has(pair_key):
 				continue
 			var dist = player.position.distance_to(ai.global_position)
-			if dist < BUMP_DIST:
+			var effective_bump_dist = BUMP_DIST + ai.bump_radius_bonus
+			if dist < effective_bump_dist:
 				player.apply_bump()
 				ai.apply_bump()
 				bump_cooldowns[pair_key] = BUMP_COOLDOWN
@@ -742,8 +955,14 @@ func _constrain_to_road() -> void:
 	var closest_offset = curve.get_closest_offset(player.position)
 	var closest_pt     = curve.sample_baked(closest_offset)
 	var dist           = player.position.distance_to(closest_pt)
-	if dist > ROAD_WIDTH * 0.48:
-		player.position = closest_pt + (player.position - closest_pt).normalized() * ROAD_WIDTH * 0.48
+	# Sync player.track_progress to curve offset so it's on the same scale as AI.progress
+	player.track_progress = closest_offset
+	if dist > ROAD_WIDTH * 0.55:
+		# Hard boundary — snap back (further out than before)
+		player.position = closest_pt + (player.position - closest_pt).normalized() * ROAD_WIDTH * 0.55
+	elif dist > ROAD_WIDTH * 0.45:
+		# Off-road grass penalty — cap speed instead of multiplying (prevents exponential decay)
+		player.speed = min(player.speed, player.MAX_SPEED * 0.45)
 
 
 func _flash_screen() -> void:
@@ -816,21 +1035,22 @@ func _check_force_finish(delta: float) -> void:
 func _force_finish_remaining() -> void:
 	if _scene_changing:
 		return
-	# Write ALL remaining cars to finish_order synchronously BEFORE any await.
-	# Calling _on_car_finished() in a loop was wrong: the first call that hits
-	# finishers_count >= total_cars sets _scene_changing = true and suspends on
-	# await, causing every subsequent call in the loop to return early — leaving
-	# those cars absent from finish_order and the results screen empty.
+	# Collect unfinished cars with their progress, sort by progress descending
+	# so force-finish positions reflect actual race standing.
+	var unfinished: Array = []
 	for ai in ai_cars:
 		if not ai.has_finished:
-			ai.has_finished = true
-			ai.speed = 0.0
-			_record_finish(ai.car_label)
+			unfinished.append({node = ai, name = ai.car_label, prog = ai.progress})
 	if not player.has_finished:
-		player.has_finished = true
-		player.speed = 0.0
-		_record_finish("You")
-	# All data is written — now trigger the single scene change.
+		unfinished.append({node = player, name = "You", prog = player.track_progress})
+
+	unfinished.sort_custom(func(a, b): return a.prog > b.prog)
+
+	for entry in unfinished:
+		entry.node.has_finished = true
+		entry.node.speed = 0.0
+		_record_finish(entry.name)
+
 	_save_race_data()
 	_trigger_scene_change()
 
@@ -877,6 +1097,7 @@ func _save_race_data() -> void:
 		bumps = _stat_bumps,
 		boost_pct = boost_pct,
 		lead_changes = _stat_lead_changes,
+		close_calls = _stat_close_calls,
 	}
 
 
@@ -936,6 +1157,13 @@ func _trigger_scene_change() -> void:
 # AI Intro Card
 # ---------------------------------------------------------------------------
 func _show_intro() -> void:
+	# Update intro card text
+	if GameData.circuit_mode:
+		var track_name = GameData.TRACKS[GameData.current_track_index].name
+		var race_num = GameData.circuit_race + 1
+		intro_card.text = "RACE %d/5 — %s" % [race_num, track_name]
+	else:
+		intro_card.text = GameData.TRACKS[GameData.current_track_index].name
 	intro_card.visible    = true
 	intro_card.modulate.a = 0.0
 	var tw = create_tween()
@@ -961,7 +1189,7 @@ func _hide_esc_dialog() -> void:
 
 func _on_esc_yes() -> void:
 	_esc_dialog_open = false
-	GameData.clear()
+	GameData.clear_circuit()
 	_change_scene("res://main_menu.tscn")
 
 
@@ -999,6 +1227,20 @@ func _sparkle_at(pos: Vector2) -> void:
 	var tw = create_tween()
 	tw.tween_property(lbl, "position:y", lbl.position.y - 50, 0.6)
 	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func(): lbl.queue_free())
+
+
+func _sparkle_close_call(pos: Vector2) -> void:
+	var lbl = Label.new()
+	lbl.text = "CLOSE CALL!"
+	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.add_theme_color_override("font_color", Color(0.3, 0.95, 1.0, 1))
+	lbl.position = pos + Vector2(-70, -30)
+	lbl.z_index  = 20
+	add_child(lbl)
+	var tw = create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y - 55, 0.7)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.7)
 	tw.tween_callback(func(): lbl.queue_free())
 
 

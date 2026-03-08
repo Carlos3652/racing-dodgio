@@ -13,6 +13,7 @@ var _base_y:     float = 0.0
 var _bob_t:      float = 0.0
 var _glow_alpha: float = 0.30
 var _star_pts:   PackedVector2Array
+var _teal_pts:   PackedVector2Array
 
 
 func _ready() -> void:
@@ -23,6 +24,11 @@ func _ready() -> void:
 		var angle = deg_to_rad(i * 36.0 - 90.0)
 		var r     = OUTER_R if i % 2 == 0 else INNER_R
 		_star_pts.append(Vector2(cos(angle) * r, sin(angle) * r))
+	# Pre-compute teal glow circle (16-sided polygon, radius 28)
+	_teal_pts = PackedVector2Array()
+	for i in range(16):
+		var a = i * TAU / 16.0
+		_teal_pts.append(Vector2(cos(a), sin(a)) * 28.0)
 
 
 func _process(delta: float) -> void:
@@ -33,6 +39,10 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
+	# Teal ground glow — filled circle behind everything for pickup visibility
+	var teal_alpha = 0.30 + 0.12 * sin(_bob_t * 3.0)
+	draw_colored_polygon(_teal_pts, Color(0.10, 0.85, 0.80, teal_alpha))
+
 	# Outer glow rings (drawn first so they appear behind the star)
 	draw_arc(Vector2.ZERO, GLOW_R1, 0.0, TAU, 24,
 			 Color(GLOW_COL1.r, GLOW_COL1.g, GLOW_COL1.b, _glow_alpha), true)

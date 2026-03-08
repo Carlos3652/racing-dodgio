@@ -9,17 +9,25 @@ const COL_HIGHLIGHT = Color(1.0, 0.85, 0.1, 1)
 const COL_DIM_BORDER = Color(0.25, 0.22, 0.40, 1)
 
 # Car options — order matters for left/right nav
+# Speed stat → max_speed: 4→310, 5→325, 6→340, 7→355, 8→370
+# Luck stat → stun_duration: 2→2.2, 3→2.0, 4→1.8, 5→1.7, 6→1.5, 7→1.4
+const SPEED_MAP = {4: 310.0, 5: 325.0, 6: 340.0, 7: 355.0, 8: 370.0}
+const LUCK_MAP  = {2: 2.2, 3: 2.0, 4: 1.8, 5: 1.7, 6: 1.5, 7: 1.4}
+
 const CAR_OPTIONS = [
-	{name = "RED CAR",    type = "player", color = Color(1.0, 0.133, 0.133, 1), speed = 6, style = 5, luck = 4},
-	{name = "BLUE CAR",   type = "blue",   color = Color(0.2, 0.5, 1.0, 1),     speed = 4, style = 6, luck = 7},
-	{name = "GREEN CAR",  type = "green",  color = Color(0.2, 0.85, 0.3, 1),    speed = 7, style = 4, luck = 3},
-	{name = "ORANGE CAR", type = "orange", color = Color(1.0, 0.55, 0.1, 1),    speed = 5, style = 7, luck = 5},
-	{name = "PURPLE CAR", type = "purple", color = Color(0.85, 0.2, 0.85, 1),   speed = 8, style = 8, luck = 2},
+	{name = "RED CAR",    type = "player", color = Color(1.0, 0.133, 0.133, 1), speed = 6, style = 5, luck = 4, boost_duration = 5.0},
+	{name = "BLUE CAR",   type = "blue",   color = Color(0.2, 0.5, 1.0, 1),     speed = 4, style = 6, luck = 7, boost_duration = 5.0},
+	{name = "GREEN CAR",  type = "green",  color = Color(0.2, 0.85, 0.3, 1),    speed = 7, style = 4, luck = 3, boost_duration = 5.0},
+	{name = "ORANGE CAR", type = "orange", color = Color(1.0, 0.55, 0.1, 1),    speed = 5, style = 7, luck = 5, boost_duration = 5.0},
+	{name = "PURPLE CAR", type = "purple", color = Color(0.85, 0.2, 0.85, 1),   speed = 8, style = 8, luck = 2, boost_duration = 3.5},
 ]
 
+const DIFFICULTIES = ["EASY", "NORMAL", "HARD"]
 var selected_index: int = 0
+var selected_difficulty: int = 1  # 0=easy, 1=normal, 2=hard
 var car_panels: Array = []  # references to the panel containers
 var car_visuals: Array = []  # references to car_visual nodes
+var diff_buttons: Array = []  # difficulty button references
 var name_label: Label
 var stat_speed: ProgressBar
 var stat_style: ProgressBar
@@ -111,13 +119,22 @@ func _build_ui() -> void:
 		fill_style.corner_radius_bottom_left  = 4
 		bar.add_theme_stylebox_override("fill", fill_style)
 
-	# Style the start button
-	_style_start_button()
-	$VBox/RaceButton.grab_focus()
+	# Difficulty buttons
+	diff_buttons = [
+		$VBox/DifficultyRow/EasyBtn,
+		$VBox/DifficultyRow/NormalBtn,
+		$VBox/DifficultyRow/HardBtn,
+	]
+	_update_difficulty_ui()
+
+	# Style the start buttons
+	_style_quick_race_button()
+	_style_circuit_button()
+	$VBox/ButtonRow/QuickRaceButton.grab_focus()
 
 
-func _style_start_button() -> void:
-	var btn = $VBox/RaceButton
+func _style_quick_race_button() -> void:
+	var btn = $VBox/ButtonRow/QuickRaceButton
 	var sn = StyleBoxFlat.new()
 	sn.bg_color = COL_ACCENT
 	var sh = StyleBoxFlat.new()
@@ -133,6 +150,35 @@ func _style_start_button() -> void:
 	btn.add_theme_stylebox_override("focus",   sn)
 	btn.add_theme_color_override("font_color",       COL_NAV_DARK)
 	btn.add_theme_color_override("font_hover_color", COL_NAV_DARK)
+
+
+func _style_circuit_button() -> void:
+	var btn = $VBox/ButtonRow/CircuitButton
+	var sn = StyleBoxFlat.new()
+	sn.bg_color = COL_NAV_DARK
+	sn.border_width_left   = 2
+	sn.border_width_top    = 2
+	sn.border_width_right  = 2
+	sn.border_width_bottom = 2
+	sn.border_color = COL_CYAN
+	var sh = StyleBoxFlat.new()
+	sh.bg_color = Color(0.06, 0.08, 0.20, 1)
+	sh.border_width_left   = 2
+	sh.border_width_top    = 2
+	sh.border_width_right  = 2
+	sh.border_width_bottom = 2
+	sh.border_color = COL_CYAN
+	for sbox in [sn, sh]:
+		sbox.corner_radius_top_left     = 10
+		sbox.corner_radius_top_right    = 10
+		sbox.corner_radius_bottom_left  = 10
+		sbox.corner_radius_bottom_right = 10
+	btn.add_theme_stylebox_override("normal",  sn)
+	btn.add_theme_stylebox_override("hover",   sh)
+	btn.add_theme_stylebox_override("pressed", sn)
+	btn.add_theme_stylebox_override("focus",   sn)
+	btn.add_theme_color_override("font_color",       COL_CYAN)
+	btn.add_theme_color_override("font_hover_color", COL_CYAN)
 
 
 func _update_selection() -> void:
@@ -193,9 +239,69 @@ func _change_scene(path: String) -> void:
 	tw.tween_callback(func(): get_tree().change_scene_to_file(path))
 
 
-func _on_race_pressed() -> void:
+func _update_difficulty_ui() -> void:
+	for i in range(diff_buttons.size()):
+		var btn = diff_buttons[i]
+		var sbox = StyleBoxFlat.new()
+		sbox.corner_radius_top_left     = 6
+		sbox.corner_radius_top_right    = 6
+		sbox.corner_radius_bottom_left  = 6
+		sbox.corner_radius_bottom_right = 6
+		if i == selected_difficulty:
+			sbox.bg_color = COL_ACCENT
+			btn.add_theme_color_override("font_color", COL_NAV_DARK)
+		else:
+			sbox.bg_color = Color(0.06, 0.05, 0.14, 1)
+			sbox.border_width_left   = 2
+			sbox.border_width_top    = 2
+			sbox.border_width_right  = 2
+			sbox.border_width_bottom = 2
+			sbox.border_color = COL_DIM_BORDER
+			btn.add_theme_color_override("font_color", COL_MUTED)
+		btn.add_theme_stylebox_override("normal",  sbox)
+		btn.add_theme_stylebox_override("hover",   sbox)
+		btn.add_theme_stylebox_override("pressed", sbox)
+		btn.add_theme_stylebox_override("focus",   sbox)
+
+
+func _on_diff_easy() -> void:
+	selected_difficulty = 0
+	_update_difficulty_ui()
+
+
+func _on_diff_normal() -> void:
+	selected_difficulty = 1
+	_update_difficulty_ui()
+
+
+func _on_diff_hard() -> void:
+	selected_difficulty = 2
+	_update_difficulty_ui()
+
+
+func _apply_car_stats(car: Dictionary) -> void:
+	GameData.player_color          = car.color
+	GameData.player_car_type       = car.type
+	GameData.player_max_speed      = SPEED_MAP.get(car.speed, 340.0)
+	GameData.player_stun_duration  = LUCK_MAP.get(car.luck, 2.0)
+	GameData.player_boost_duration = car.get("boost_duration", 5.0)
+	GameData.difficulty            = DIFFICULTIES[selected_difficulty].to_lower()
+
+
+func _on_quick_race_pressed() -> void:
 	var car = CAR_OPTIONS[selected_index]
-	GameData.player_color    = car.color
-	GameData.player_car_type = car.type
-	GameData.clear()
+	_apply_car_stats(car)
+	GameData.clear_circuit()
+	GameData.circuit_mode = false
+	GameData.current_track_index = 0
+	_change_scene("res://main.tscn")
+
+
+func _on_circuit_pressed() -> void:
+	var car = CAR_OPTIONS[selected_index]
+	_apply_car_stats(car)
+	GameData.clear_circuit()
+	GameData.circuit_mode = true
+	GameData.circuit_race = 0
+	GameData.current_track_index = 0
 	_change_scene("res://main.tscn")

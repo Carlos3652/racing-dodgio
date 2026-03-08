@@ -104,13 +104,46 @@ max_value = 8.0
 value = 4.0
 show_percentage = false
 
-[node name="Spacer" type="Control" parent="VBox"]
-custom_minimum_size = Vector2(0, 8)
+[node name="DifficultyRow" type="HBoxContainer" parent="VBox"]
+alignment = 1
+theme_override_constants/separation = 10
 
-[node name="RaceButton" type="Button" parent="VBox"]
-custom_minimum_size = Vector2(260, 56)
-text = ">> RACE NOW! <<"
-theme_override_font_sizes/font_size = 26
+[node name="DiffLabel" type="Label" parent="VBox/DifficultyRow"]
+text = "DIFFICULTY:"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
+
+[node name="EasyBtn" type="Button" parent="VBox/DifficultyRow"]
+custom_minimum_size = Vector2(80, 32)
+text = "EASY"
+theme_override_font_sizes/font_size = 14
+
+[node name="NormalBtn" type="Button" parent="VBox/DifficultyRow"]
+custom_minimum_size = Vector2(80, 32)
+text = "NORMAL"
+theme_override_font_sizes/font_size = 14
+
+[node name="HardBtn" type="Button" parent="VBox/DifficultyRow"]
+custom_minimum_size = Vector2(80, 32)
+text = "HARD"
+theme_override_font_sizes/font_size = 14
+
+[node name="Spacer" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 4)
+
+[node name="ButtonRow" type="HBoxContainer" parent="VBox"]
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="QuickRaceButton" type="Button" parent="VBox/ButtonRow"]
+custom_minimum_size = Vector2(220, 52)
+text = ">> QUICK RACE <<"
+theme_override_font_sizes/font_size = 22
+
+[node name="CircuitButton" type="Button" parent="VBox/ButtonRow"]
+custom_minimum_size = Vector2(220, 52)
+text = "CIRCUIT MODE"
+theme_override_font_sizes/font_size = 22
 
 [node name="Controls" type="Label" parent="VBox"]
 text = "WASD / Arrows to drive  |  Stars = Boost  |  Dodge Jeeps"
@@ -118,4 +151,8 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.40, 0.40, 0.55, 1)
 
-[connection signal="pressed" from="VBox/RaceButton" to="." method="_on_race_pressed"]
+[connection signal="pressed" from="VBox/DifficultyRow/EasyBtn" to="." method="_on_diff_easy"]
+[connection signal="pressed" from="VBox/DifficultyRow/NormalBtn" to="." method="_on_diff_normal"]
+[connection signal="pressed" from="VBox/DifficultyRow/HardBtn" to="." method="_on_diff_hard"]
+[connection signal="pressed" from="VBox/ButtonRow/QuickRaceButton" to="." method="_on_quick_race_pressed"]
+[connection signal="pressed" from="VBox/ButtonRow/CircuitButton" to="." method="_on_circuit_pressed"]
