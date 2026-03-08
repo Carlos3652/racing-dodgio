@@ -93,6 +93,15 @@ var _player_finish_timer: float = 0.0
 const FORCE_FINISH_DELAY: float = 10.0
 const RACE_TIMEOUT: float = 120.0
 
+# Race stats tracking (written to GameData at end)
+var _stat_stars: int = 0
+var _stat_stuns: int = 0
+var _stat_bumps: int = 0
+var _stat_boost_frames: int = 0
+var _stat_total_frames: int = 0
+var _stat_lead_changes: int = 0
+var _stat_last_leader: String = ""
+
 # New HUD refs
 var esc_dialog:    Control
 var esc_yes_btn:   Button
@@ -611,6 +620,7 @@ func _process(delta: float) -> void:
 			_check_car_bumps(delta)
 			_tick_respawns(delta)
 			_check_force_finish(delta)
+			_track_race_stats()
 
 		State.FINISHED:
 			pass
@@ -632,11 +642,13 @@ func _check_player_collisions() -> void:
 					_play_griddy()
 					_sparkle_at(child.position)
 					_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
+					_stat_stars += 1
 			"jeep":
 				if dist < 65 and player.crash_time <= 0:
 					player.apply_crash()
 					_flash_screen()
 					_hide_pickup(child, jeep_timers, JEEP_RESPAWN_SEC)
+					_stat_stuns += 1
 
 	# --- Option D: AI cars can also collect stars ---
 	_check_ai_collisions()
@@ -686,6 +698,7 @@ func _check_car_bumps(delta: float) -> void:
 				ai.apply_bump()
 				bump_cooldowns[pair_key] = BUMP_COOLDOWN
 				_flash_bump(player.position)
+				_stat_bumps += 1
 
 	# AI vs AI
 	for i in range(ai_cars.size()):
@@ -818,7 +831,53 @@ func _force_finish_remaining() -> void:
 		player.speed = 0.0
 		_record_finish("You")
 	# All data is written — now trigger the single scene change.
+	_save_race_data()
 	_trigger_scene_change()
+
+
+# ---------------------------------------------------------------------------
+# Race stats tracking
+# ---------------------------------------------------------------------------
+func _track_race_stats() -> void:
+	_stat_total_frames += 1
+	if player.boost_time > 0:
+		_stat_boost_frames += 1
+
+	# Track lead changes — who is in 1st place right now?
+	var leader = "You"
+	var best_prog = player.track_progress
+	for ai in ai_cars:
+		var ai_prog = INF if ai.has_finished else ai.progress
+		if ai_prog > best_prog:
+			best_prog = ai_prog
+			leader = ai.car_label
+	if _stat_last_leader != "" and leader != _stat_last_leader:
+		_stat_lead_changes += 1
+	_stat_last_leader = leader
+
+
+func _save_race_data() -> void:
+	# Track points for minimap snapshot on results screen
+	GameData.track_points.clear()
+	for p in TRACK_POINTS:
+		GameData.track_points.append(p)
+
+	# Final positions of all cars
+	GameData.final_positions["You"] = player.position
+	for ai in ai_cars:
+		GameData.final_positions[ai.car_label] = ai.global_position
+
+	# Race stats
+	var boost_pct = 0.0
+	if _stat_total_frames > 0:
+		boost_pct = float(_stat_boost_frames) / float(_stat_total_frames) * 100.0
+	GameData.race_stats = {
+		stars = _stat_stars,
+		stuns = _stat_stuns,
+		bumps = _stat_bumps,
+		boost_pct = boost_pct,
+		lead_changes = _stat_lead_changes,
+	}
 
 
 # ---------------------------------------------------------------------------
@@ -832,6 +891,7 @@ func _on_car_finished(car_name: String) -> void:
 		return
 	_record_finish(car_name)
 	if finishers_count >= total_cars:
+		_save_race_data()
 		_trigger_scene_change()
 
 

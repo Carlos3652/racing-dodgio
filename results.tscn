@@ -62,6 +62,12 @@ custom_minimum_size = Vector2(220, 52)
 text = "RACE AGAIN"
 theme_override_font_sizes/font_size = 20
 
+[node name="ReplayButton" type="Button" parent="ButtonRow"]
+custom_minimum_size = Vector2(200, 52)
+text = "VIEW REPLAY"
+theme_override_font_sizes/font_size = 20
+disabled = true
+
 [node name="MenuButton" type="Button" parent="ButtonRow"]
 custom_minimum_size = Vector2(200, 52)
 text = "MAIN MENU"

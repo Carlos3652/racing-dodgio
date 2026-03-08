@@ -11,6 +11,12 @@ const COL_ACCENT     = Color(1.000, 0.851, 0.102, 1)
 const COL_NAV_BTN    = Color(0.039, 0.027, 0.118, 1)
 const COL_BTN_BORDER = Color(0.333, 0.200, 0.733, 1)
 const COL_BG         = Color(0.039, 0.027, 0.118, 1)
+const COL_CYAN       = Color(0.3, 0.95, 1.0, 1)
+const COL_STAT_LABEL = Color(0.65, 0.60, 0.85, 1)
+const COL_STAT_VAL   = Color(1.0, 1.0, 1.0, 1)
+const COL_TRACK_LINE = Color(0.35, 0.35, 0.50, 0.60)
+const TRACK_SNAP_SIZE = Vector2(200, 200)
+const TRACK_SNAP_PAD  = 16.0
 
 # ── Cinematic state machine ──────────────────────────────────────────────
 enum Phase { FLASH, REVEAL, RESULTS }
@@ -280,6 +286,9 @@ func _show_results_instant() -> void:
 	if flash_rect:
 		flash_rect.queue_free()
 		flash_rect = null
+	if reveal_container:
+		reveal_container.queue_free()
+		reveal_container = null
 	$ButtonRow/RaceAgainButton.grab_focus()
 
 
@@ -290,39 +299,84 @@ func _build_results() -> void:
 	var order = GameData.finish_order
 	var vbox  = $ContentVBox
 
+	# ── Two-column layout: finish order (left) | highlights (right) ──────
+	var columns = HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 24)
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(columns)
+
+	# ── LEFT COLUMN: Finish order ────────────────────────────────────────
+	var left_col = VBoxContainer.new()
+	left_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_col.add_theme_constant_override("separation", 10)
+	columns.add_child(left_col)
+
 	if order.is_empty():
 		var lbl = Label.new()
 		lbl.text = "No race data."
 		lbl.add_theme_color_override("font_color", COL_MUTED)
-		vbox.add_child(lbl)
+		left_col.add_child(lbl)
 	else:
-		# ── 1st place — full-width gold card ──────────────────────────────
 		if order.size() >= 1:
-			vbox.add_child(_make_first_card(order[0]))
-
-		# ── 2nd + 3rd — side-by-side ──────────────────────────────────────
+			left_col.add_child(_make_first_card(order[0]))
 		if order.size() >= 2:
 			var mid = HBoxContainer.new()
 			mid.add_theme_constant_override("separation", 12)
 			for i in [1, 2]:
 				if i < order.size():
 					mid.add_child(_make_podium_card(order[i], i))
-			vbox.add_child(mid)
-
-		# ── Divider ───────────────────────────────────────────────────────
+			left_col.add_child(mid)
 		if order.size() > 3:
 			var div = ColorRect.new()
 			div.custom_minimum_size = Vector2(0, 1)
 			div.color = Color(0.200, 0.180, 0.380, 1)
-			vbox.add_child(div)
-
-		# ── 4th + 5th — compact rows ──────────────────────────────────────
+			left_col.add_child(div)
 		for i in [3, 4]:
 			if i < order.size():
-				vbox.add_child(_make_lower_row(order[i], i))
+				left_col.add_child(_make_lower_row(order[i], i))
+
+	# ── RIGHT COLUMN: Race Highlights + Track Snapshot ───────────────────
+	var right_col = VBoxContainer.new()
+	right_col.custom_minimum_size = Vector2(260, 0)
+	right_col.add_theme_constant_override("separation", 10)
+	columns.add_child(right_col)
+
+	# Highlights header
+	var hl_header = Label.new()
+	hl_header.text = "RACE HIGHLIGHTS"
+	hl_header.add_theme_font_size_override("font_size", 14)
+	hl_header.add_theme_color_override("font_color", COL_CYAN)
+	right_col.add_child(hl_header)
+
+	# Stats rows
+	var stats = GameData.race_stats
+	if not stats.is_empty():
+		right_col.add_child(_make_stat_row("Stars Collected", str(stats.get("stars", 0))))
+		right_col.add_child(_make_stat_row("Times Stunned", str(stats.get("stuns", 0))))
+		right_col.add_child(_make_stat_row("Car Bumps", str(stats.get("bumps", 0))))
+		right_col.add_child(_make_stat_row("Boost Time", "%d%%" % int(stats.get("boost_pct", 0.0))))
+		right_col.add_child(_make_stat_row("Lead Changes", str(stats.get("lead_changes", 0))))
+
+	# Divider before track snapshot
+	var div2 = ColorRect.new()
+	div2.custom_minimum_size = Vector2(0, 1)
+	div2.color = Color(0.200, 0.180, 0.380, 1)
+	right_col.add_child(div2)
+
+	# Track snapshot header
+	var ts_header = Label.new()
+	ts_header.text = "FINISH POSITIONS"
+	ts_header.add_theme_font_size_override("font_size", 12)
+	ts_header.add_theme_color_override("font_color", COL_MUTED)
+	right_col.add_child(ts_header)
+
+	# Track snapshot — miniature track with colored dots
+	var snapshot = _make_track_snapshot()
+	right_col.add_child(snapshot)
 
 	# ── Style buttons ─────────────────────────────────────────────────────
 	_style_button($ButtonRow/RaceAgainButton, true)
+	_style_replay_button($ButtonRow/ReplayButton)
 	_style_button($ButtonRow/MenuButton,      false)
 
 
@@ -469,6 +523,125 @@ func _make_lower_row(entry: Dictionary, idx: int) -> HBoxContainer:
 	return row
 
 
+# ── Stat row helper ───────────────────────────────────────────────────────
+
+func _make_stat_row(label_text: String, value_text: String) -> HBoxContainer:
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+
+	var lbl = Label.new()
+	lbl.text = label_text
+	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.add_theme_font_size_override("font_size", 15)
+	lbl.add_theme_color_override("font_color", COL_STAT_LABEL)
+	row.add_child(lbl)
+
+	var val = Label.new()
+	val.text = value_text
+	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val.add_theme_font_size_override("font_size", 15)
+	val.add_theme_color_override("font_color", COL_STAT_VAL)
+	row.add_child(val)
+
+	return row
+
+
+# ── Track snapshot (miniature track with car dots) ────────────────────────
+
+func _make_track_snapshot() -> PanelContainer:
+	var panel = PanelContainer.new()
+	var sbox = StyleBoxFlat.new()
+	sbox.bg_color = Color(0.05, 0.04, 0.12, 1)
+	sbox.corner_radius_top_left     = 8
+	sbox.corner_radius_top_right    = 8
+	sbox.corner_radius_bottom_left  = 8
+	sbox.corner_radius_bottom_right = 8
+	sbox.content_margin_left   = 8.0
+	sbox.content_margin_top    = 8.0
+	sbox.content_margin_right  = 8.0
+	sbox.content_margin_bottom = 8.0
+	panel.add_theme_stylebox_override("panel", sbox)
+	panel.custom_minimum_size = TRACK_SNAP_SIZE + Vector2(16, 16)
+
+	var track_ctrl = _TrackSnapshotControl.new()
+	track_ctrl.custom_minimum_size = TRACK_SNAP_SIZE
+	track_ctrl.track_points     = GameData.track_points
+	track_ctrl.final_positions  = GameData.final_positions
+	track_ctrl.finish_order     = GameData.finish_order
+	track_ctrl.car_color_fn     = _car_color
+	track_ctrl.player_color     = GameData.player_color
+	panel.add_child(track_ctrl)
+
+	return panel
+
+
+# ── Inner class for track snapshot drawing ────────────────────────────────
+
+class _TrackSnapshotControl extends Control:
+	var track_points: Array = []
+	var final_positions: Dictionary = {}
+	var finish_order: Array = []
+	var car_color_fn: Callable
+	var player_color: Color = Color.RED
+
+	func _draw() -> void:
+		if track_points.is_empty():
+			return
+
+		var pad = 16.0
+		var area = size - Vector2(pad * 2, pad * 2)
+
+		# Compute bounds
+		var min_pt = Vector2(INF, INF)
+		var max_pt = Vector2(-INF, -INF)
+		for p in track_points:
+			min_pt.x = min(min_pt.x, p.x)
+			min_pt.y = min(min_pt.y, p.y)
+			max_pt.x = max(max_pt.x, p.x)
+			max_pt.y = max(max_pt.y, p.y)
+
+		var world_size = max_pt - min_pt
+		if world_size.x == 0: world_size.x = 1
+		if world_size.y == 0: world_size.y = 1
+
+		var sx = area.x / world_size.x
+		var sy = area.y / world_size.y
+		var s  = min(sx, sy)
+		var scale_v = Vector2(s, s)
+		var offset  = -min_pt * s + Vector2(pad, pad)
+		# Center
+		var used = world_size * s
+		offset.x += (area.x - used.x) * 0.5
+		offset.y += (area.y - used.y) * 0.5
+
+		# Draw track outline
+		var scaled_pts = PackedVector2Array()
+		for p in track_points:
+			scaled_pts.append(p * scale_v + offset)
+		draw_polyline(scaled_pts, Color(0.35, 0.35, 0.50, 0.60), 3.0, true)
+
+		# Draw car dots at final positions
+		for entry in finish_order:
+			var car_name = entry.name
+			if not final_positions.has(car_name):
+				continue
+			var world_pos = final_positions[car_name]
+			var dot_pos   = world_pos * scale_v + offset
+			var col       = car_color_fn.call(car_name)
+			var r         = 5.0 if car_name == "You" else 4.0
+
+			if car_name == "You":
+				draw_circle(dot_pos, r + 1.5, Color.WHITE)
+			draw_circle(dot_pos, r, col)
+
+		# "YOU" label next to player dot
+		if final_positions.has("You"):
+			var pp = final_positions["You"] * scale_v + offset
+			var font = ThemeDB.fallback_font
+			if font:
+				draw_string(font, pp + Vector2(8, 4), "YOU", HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color.WHITE)
+
+
 # ── Button styling ────────────────────────────────────────────────────────
 
 func _style_button(btn: Button, is_primary: bool) -> void:
@@ -506,6 +679,28 @@ func _style_button(btn: Button, is_primary: bool) -> void:
 	btn.add_theme_stylebox_override("hover",  sbox_hover)
 	btn.add_theme_stylebox_override("pressed", sbox_normal)
 	btn.add_theme_stylebox_override("focus",   sbox_normal)
+
+
+func _style_replay_button(btn: Button) -> void:
+	var sbox = StyleBoxFlat.new()
+	sbox.bg_color = Color(0.05, 0.04, 0.12, 1)
+	sbox.border_width_top    = 2
+	sbox.border_width_bottom = 2
+	sbox.border_width_left   = 2
+	sbox.border_width_right  = 2
+	sbox.border_color = COL_CYAN * Color(1, 1, 1, 0.4)
+	sbox.corner_radius_top_left     = 8
+	sbox.corner_radius_top_right    = 8
+	sbox.corner_radius_bottom_left  = 8
+	sbox.corner_radius_bottom_right = 8
+	btn.add_theme_stylebox_override("normal",  sbox)
+	btn.add_theme_stylebox_override("hover",   sbox)
+	btn.add_theme_stylebox_override("pressed", sbox)
+	btn.add_theme_stylebox_override("focus",   sbox)
+	btn.add_theme_stylebox_override("disabled", sbox)
+	btn.add_theme_color_override("font_color",          COL_CYAN * Color(1, 1, 1, 0.4))
+	btn.add_theme_color_override("font_disabled_color",  COL_CYAN * Color(1, 1, 1, 0.4))
+	btn.tooltip_text = "Coming Soon"
 
 
 # ── Scene fade transition helper ──────────────────────────────────────────
