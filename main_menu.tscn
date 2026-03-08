@@ -17,49 +17,105 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -240.0
-offset_top = -220.0
-offset_right = 240.0
-offset_bottom = 230.0
-theme_override_constants/separation = 20
+offset_left = -280.0
+offset_top = -260.0
+offset_right = 280.0
+offset_bottom = 260.0
+theme_override_constants/separation = 14
 alignment = 1
 
 [node name="Title" type="Label" parent="VBox"]
 text = "RACING DODGIO"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 64
+theme_override_font_sizes/font_size = 52
 theme_override_colors/font_color = Color(1.0, 0.851, 0.102, 1)
 
 [node name="Subtitle" type="Label" parent="VBox"]
-text = "Overland Park, KS"
+text = "CHOOSE YOUR CAR"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.3, 0.95, 1.0, 1)
+
+[node name="CarRow" type="HBoxContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 130)
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="NavHint" type="Label" parent="VBox"]
+text = "< A / D >"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
+
+[node name="SelectedName" type="Label" parent="VBox"]
+text = "RED CAR"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1.0, 0.851, 0.102, 1)
+
+[node name="StatsBox" type="VBoxContainer" parent="VBox"]
+theme_override_constants/separation = 6
+
+[node name="SpeedRow" type="HBoxContainer" parent="VBox/StatsBox"]
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="SpeedLabel" type="Label" parent="VBox/StatsBox/SpeedRow"]
+custom_minimum_size = Vector2(70, 0)
+text = "SPEED"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
+
+[node name="SpeedBar" type="ProgressBar" parent="VBox/StatsBox/SpeedRow"]
+custom_minimum_size = Vector2(200, 18)
+max_value = 8.0
+value = 6.0
+show_percentage = false
+
+[node name="StyleRow" type="HBoxContainer" parent="VBox/StatsBox"]
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="StyleLabel" type="Label" parent="VBox/StatsBox/StyleRow"]
+custom_minimum_size = Vector2(70, 0)
+text = "STYLE"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
+
+[node name="StyleBar" type="ProgressBar" parent="VBox/StatsBox/StyleRow"]
+custom_minimum_size = Vector2(200, 18)
+max_value = 8.0
+value = 5.0
+show_percentage = false
+
+[node name="LuckRow" type="HBoxContainer" parent="VBox/StatsBox"]
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="LuckLabel" type="Label" parent="VBox/StatsBox/LuckRow"]
+custom_minimum_size = Vector2(70, 0)
+text = "LUCK"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
+
+[node name="LuckBar" type="ProgressBar" parent="VBox/StatsBox/LuckRow"]
+custom_minimum_size = Vector2(200, 18)
+max_value = 8.0
+value = 4.0
+show_percentage = false
 
 [node name="Spacer" type="Control" parent="VBox"]
-custom_minimum_size = Vector2(0, 30)
+custom_minimum_size = Vector2(0, 8)
 
-[node name="StartButton" type="Button" parent="VBox"]
-custom_minimum_size = Vector2(260, 60)
-text = ">> START RACE <<"
-theme_override_font_sizes/font_size = 28
+[node name="RaceButton" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(260, 56)
+text = ">> RACE NOW! <<"
+theme_override_font_sizes/font_size = 26
 
 [node name="Controls" type="Label" parent="VBox"]
-text = "Arrow keys to steer  —  UP / DOWN to accelerate / brake"
+text = "WASD / Arrows to drive  |  Stars = Boost  |  Dodge Jeeps"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.40, 0.40, 0.55, 1)
 
-[node name="Instr2" type="Label" parent="VBox"]
-text = "Collect  [*]  stars for a 5-second speed boost"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
-
-[node name="Instr3" type="Label" parent="VBox"]
-text = "Dodge road blocks — you stall for 2 seconds"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
-
-[connection signal="pressed" from="VBox/StartButton" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="VBox/RaceButton" to="." method="_on_race_pressed"]

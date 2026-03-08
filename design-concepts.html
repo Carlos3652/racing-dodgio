@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Racing Dodgio — Design Concepts</title>
+<style>
+  :root {
+    --navy: #0D0D2B;
+    --navy-mid: #141438;
+    --navy-light: #1E1E50;
+    --yellow: #FFD91A;
+    --yellow-dim: #C4A800;
+    --purple: #7B3FF2;
+    --purple-light: #A855F7;
+    --cyan: #00E5FF;
+    --green: #7DEB7D;
+    --red: #FF4444;
+    --orange: #FF8C00;
+    --gold: #FFD700;
+    --silver: #C0C0C0;
+    --bronze: #CD7F32;
+    --white: #FFFFFF;
+    --muted: #8888BB;
+    --card-bg: #16163A;
+    --card-border: #2A2A6A;
+    --tag-easy: #22C55E;
+    --tag-medium: #F59E0B;
+    --tag-hard: #EF4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: linear-gradient(135deg, #0D0D2B 0%, #1a1a4e 50%, #0D0D2B 100%);
+    border-bottom: 2px solid var(--purple);
+    padding: 40px 60px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -38deg,
+      transparent,
+      transparent 60px,
+      rgba(123,63,242,0.06) 60px,
+      rgba(123,63,242,0.06) 61px
+    );
+  }
+  .site-header h1 {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--yellow);
+    text-shadow: 0 0 20px rgba(255,217,26,0.5), 0 0 40px rgba(255,217,26,0.2);
+    position: relative;
+  }
+  .site-header .subtitle {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    position: relative;
+  }
+  .site-header .tag-line {
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: var(--purple-light);
+    position: relative;
+  }
+
+  /* ── NAV TABS ── */
+  .tab-nav {
+    display: flex;
+    background: var(--navy-mid);
+    border-bottom: 2px solid var(--card-border);
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tab-btn {
+    flex: 1;
+    min-width: 160px;
+    padding: 16px 20px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--white); background: rgba(255,255,255,0.04); }
+  .tab-btn.active {
+    color: var(--yellow);
+    border-bottom-color: var(--yellow);
+    background: rgba(255,217,26,0.06);
+  }
+
+  /* ── SECTIONS ── */
+  .section { display: none; padding: 48px 60px; }
+  .section.active { display: block; }
+
+  .section-intro {
+    max-width: 720px;
+    margin: 0 auto 48px;
+    text-align: center;
+  }
+  .section-intro h2 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--yellow);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .section-intro p { color: var(--muted); font-size: 0.95rem; }
+
+  /* ── CONCEPT CARDS ── */
+  .concepts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .concept-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .concept-card:hover { border-color: var(--purple); }
+
+  .concept-header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .concept-number {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--purple);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+  .concept-title { font-size: 1.2rem; font-weight: 800; color: var(--yellow); flex: 1; }
+  .difficulty-tag {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .diff-easy { background: rgba(34,197,94,0.15); color: var(--tag-easy); border: 1px solid var(--tag-easy); }
+  .diff-medium { background: rgba(245,158,11,0.15); color: var(--tag-medium); border: 1px solid var(--tag-medium); }
+  .diff-hard { background: rgba(239,68,68,0.15); color: var(--tag-hard); border: 1px solid var(--tag-hard); }
+
+  .concept-body { padding: 24px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 800px) { .concept-body { grid-template-columns: 1fr; } .section { padding: 32px 20px; } }
+
+  /* ── WIREFRAME ── */
+  .wireframe-block {
+    background: #0A0A20;
+    border: 1px solid #1E1E50;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: #A0A8D0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .wireframe-block .wf-yellow { color: var(--yellow); }
+  .wireframe-block .wf-cyan { color: var(--cyan); }
+  .wireframe-block .wf-green { color: var(--green); }
+  .wireframe-block .wf-purple { color: var(--purple-light); }
+  .wireframe-block .wf-red { color: var(--red); }
+  .wireframe-block .wf-muted { color: #444470; }
+
+  /* ── DETAILS PANEL ── */
+  .details-panel {}
+  .details-panel h4 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--purple-light);
+    margin-bottom: 10px;
+    margin-top: 18px;
+  }
+  .details-panel h4:first-child { margin-top: 0; }
+
+  .feature-list { list-style: none; }
+  .feature-list li {
+    padding: 5px 0;
+    padding-left: 18px;
+    position: relative;
+    font-size: 0.88rem;
+    color: #C0C8E8;
+  }
+  .feature-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--cyan);
+  }
+
+  .concept-desc {
+    font-size: 0.88rem;
+    color: #9098C0;
+    line-height: 1.65;
+  }
+
+  /* ── DIVIDER ── */
+  .category-divider {
+    text-align: center;
+    margin: 0 auto 40px;
+    max-width: 1100px;
+  }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    border-top: 1px solid var(--card-border);
+    padding: 24px 60px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>RACING DODGIO</h1>
+  <div class="subtitle">Design Concepts &amp; Upgrade Proposals</div>
+  <div class="tag-line">UIUXVisionary — 2026-03-07 &nbsp;|&nbsp; Godot 4.6 / Neon Arcade Theme &nbsp;|&nbsp; Family-Friendly</div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('menu')">1. Main Menu</button>
+  <button class="tab-btn" onclick="showTab('results')">2. Results Screen</button>
+  <button class="tab-btn" onclick="showTab('hud')">3. HUD / Gameplay</button>
+  <button class="tab-btn" onclick="showTab('track')">4. Track / Map</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 1 — MAIN MENU
+═══════════════════════════════════════════════════════ -->
+<section id="tab-menu" class="section active">
+  <div class="section-intro">
+    <h2>MAIN MENU REDESIGN</h2>
+    <p>Five distinct design directions for the start screen. Each has a different emotional tone and visual philosophy. The current screen has a solid foundation — these build outward from it.</p>
+  </div>
+
+  <div class="concepts-grid">
+
+    <!-- MENU CONCEPT 1 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">1</div>
+        <div class="concept-title">NEON GRID HORIZON</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; [DEEP NAVY #0D0D2B BACKGROUND]         &#9474;
+&#9474;                                         &#9474;
+&#9474;  :: VANISHING POINT GRID ::              &#9474;
+&#9474;  Purple #7B3FF2 lines converge at        &#9474;
+&#9474;  screen center-bottom. Perspective       &#9474;
+&#9474;  grid scrolls slowly upward (loop).      &#9474;
+&#9474;                                         &#9474;
+&#9474;    +---------------------------------+   &#9474;
+&#9474;    |   RACING  DODGIO               |   &#9474;
+&#9474;    |   [72pt bold, gold #FFD91A]    |   &#9474;
+&#9474;    |   glow pulse: 0 to 20px blur   |   &#9474;
+&#9474;    +---------------------------------+   &#9474;
+&#9474;    |  "DODGE. BOOST. WIN."          |   &#9474;
+&#9474;    |  [16pt, cyan #00E5FF, 60% op]  |   &#9474;
+&#9474;    +---------------------------------+   &#9474;
+&#9474;                                         &#9474;
+&#9474;    [  >> START RACE <<  ]               &#9474;
+&#9474;    [yellow bg, navy text, 52pt bold]     &#9474;
+&#9474;    bob animation: +/-4px on sin wave     &#9474;
+&#9474;                                         &#9474;
+&#9474;    [CONTROLS]     [CREDITS]             &#9474;
+&#9474;    muted purple, 16pt                   &#9474;
+&#9474;                                         &#9474;
+&#9474;  :: MOVING CARS ::                       &#9474;
+&#9474;  Small car shapes scroll left-to-right   &#9474;
+&#9474;  in grid perspective lanes, 30% opacity  &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A retro synthwave perspective grid fills the lower half of the screen, scrolling upward to create an infinite road illusion. The title floats above the horizon with a slow gold glow pulse. Mini car silhouettes drift across the grid lanes in the background.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Perspective grid drawn via Line2D nodes, scrolling via shader offset or manual UV shift in _process</li>
+            <li>Title glow pulse: Tween modulate.a between 0.7 and 1.0 on 1.8s loop</li>
+            <li>Mini car shapes (same car_visual.gd polygons, scale 0.25) drift L to R at varying speeds</li>
+            <li>START RACE button bobs +/-4px vertically using sin(time)</li>
+            <li>Secondary buttons (Controls, Credits) appear below, smaller, muted purple</li>
+            <li>Color palette: Navy #0D0D2B, Grid #7B3FF2, Title #FFD91A, Tagline #00E5FF</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Grid: 8-10 Line2D nodes in SubViewport or direct CanvasItem, animated via script</li>
+            <li>Cars: duplicate car_visual.gd nodes, set_script, disable collision, add to BackgroundLayer CanvasLayer</li>
+            <li>No shaders required — pure GDScript animation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENU CONCEPT 2 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">2</div>
+        <div class="concept-title">LIVE PREVIEW RACE</div>
+        <div class="difficulty-tag diff-hard">Hard</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; [ACTUAL GAME MAP IN BACKGROUND]         &#9474;
+&#9474;  SubViewport plays demo race at 30%      &#9474;
+&#9474;  opacity. AI cars race continuously.     &#9474;
+&#9474;  Camera slowly pans the track.           &#9474;
+&#9474;                                         &#9474;
+&#9474;  +-----------------------------------+  &#9474;
+&#9474;  |   DARK OVERLAY (60% opacity)      |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  |      RACING DODGIO                |  &#9474;
+&#9474;  |      [64pt gold, centered]        |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  |   +---------------------------+   |  &#9474;
+&#9474;  |   |   >> START RACE <<       |   |  &#9474;
+&#9474;  |   |   [yellow pill button]   |   |  &#9474;
+&#9474;  |   +---------------------------+   |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  |   ARROW KEYS  STARS=BOOST         |  &#9474;
+&#9474;  |   DODGE JEEPS  ESC=PAUSE          |  &#9474;
+&#9474;  |   [12pt cyan, 2-col layout]       |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  +-----------------------------------+  &#9474;
+&#9474;                                         &#9474;
+&#9474;  DEMO text: "DEMO MODE" watermark        &#9474;
+&#9474;  bottom-right, 10pt, 30% opacity         &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">The main menu IS the game running in the background. A SubViewport renders the live race track with AI cars looping indefinitely. A semi-opaque dark overlay sits on top with the title and button. Players can see real gameplay before they commit to starting — immediately communicates the game's feel.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>SubViewport with the main.tscn loaded, all AI cars active, player car removed</li>
+            <li>Slow-pan Camera2D orbits the track with a PathFollow2D-driven look target</li>
+            <li>Dark ColorRect overlay at 60% alpha sits above the SubViewportContainer</li>
+            <li>UI elements centered in a VBoxContainer over the overlay</li>
+            <li>Controls displayed as a 2-column grid: key on left, action on right</li>
+            <li>"DEMO MODE" watermark bottom-right at 30% opacity</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>SubViewport (size=game resolution) + SubViewportContainer stretched to full screen</li>
+            <li>Instantiate main.tscn as child of SubViewport; disable player input processing</li>
+            <li>CanvasLayer z=1 holds overlay + UI</li>
+            <li>Risk: memory overhead. Mitigate by running AI at 0.5x speed and reducing spawn counts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENU CONCEPT 3 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">3</div>
+        <div class="concept-title">RETRO ARCADE CABINET</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; [SCANLINE OVERLAY — subtle, 2px rows]   &#9474;
+&#9474;                                         &#9474;
+&#9474;  ########## RACING DODGIO ##########     &#9474;
+&#9474;  [alternating yellow/white letters,      &#9474;
+&#9474;   68pt, letter-by-letter flash cycle]    &#9474;
+&#9474;                                         &#9474;
+&#9474;  ====================================   &#9474;
+&#9474;  [cyan divider line]                    &#9474;
+&#9474;                                         &#9474;
+&#9474;  ** BEST RACERS **                       &#9474;
+&#9474;  1st  YOU      --:--                    &#9474;
+&#9474;  2nd  AI BLUE  03:24                    &#9474;
+&#9474;  3rd  AI GREEN 03:41                    &#9474;
+&#9474;  [high score table — past finish times] &#9474;
+&#9474;  [12pt monospace, cyan/white]            &#9474;
+&#9474;                                         &#9474;
+&#9474;  ====================================   &#9474;
+&#9474;                                         &#9474;
+&#9474;  [ INSERT COIN — PRESS ENTER TO START ] &#9474;
+&#9474;  [blinking at 1Hz, 20pt yellow]         &#9474;
+&#9474;                                         &#9474;
+&#9474;  ====================================   &#9474;
+&#9474;  ARROWS=DRIVE  STARS=BOOST  ESC=PAUSE   &#9474;
+&#9474;  [10pt, muted purple, bottom strip]     &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">Full retro arcade attract screen. Simulates a classic arcade cabinet display: letter-by-letter title flash, fake high score table of previous race finish times, and the iconic "INSERT COIN" blink prompt. A scanline effect drawn via repeating ColorRect stripes adds CRT authenticity. No button — just press any key.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Title letters cycle yellow/white in sequence using a Timer and Label array</li>
+            <li>Fake high score table shows AI finish positions from previous race (or placeholder times)</li>
+            <li>Persist best times in GameData singleton between sessions</li>
+            <li>"INSERT COIN / PRESS ENTER" blinks via Tween alpha 1.0 to 0.0 at 0.5s interval</li>
+            <li>Any key press (Input.is_anything_pressed) launches race — lowers friction</li>
+            <li>Scanline overlay: ColorRect with repeating semi-transparent rows via shader or Node loop</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>8 Label nodes for title letters in HBoxContainer, each animated on a staggered Timer</li>
+            <li>Leaderboard: VBoxContainer of Label rows, populated from GameData.best_times array</li>
+            <li>Scanlines: 300 ColorRect nodes 1px tall, 20% black, in a Control that fills screen — OR a repeated texture on TextureRect</li>
+            <li>Add best_times: Array to game_data.gd, push finish_order times after each race</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENU CONCEPT 4 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">4</div>
+        <div class="concept-title">CAR SELECT LOBBY</div>
+        <div class="difficulty-tag diff-hard">Hard</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;         RACING DODGIO                   &#9474;
+&#9474;         [40pt gold, top-center]          &#9474;
+&#9474;                                         &#9474;
+&#9474;  CHOOSE YOUR CAR:                        &#9474;
+&#9474;  [18pt cyan]                             &#9474;
+&#9474;                                         &#9474;
+&#9474;  +-------+ +-------+ +-------+          &#9474;
+&#9474;  | [RED] | | [BLU] | | [GRN] |  < >     &#9474;
+&#9474;  | car   | | car   | | car   |          &#9474;
+&#9474;  | shape | | shape | | shape |          &#9474;
+&#9474;  +-------+ +-------+ +-------+          &#9474;
+&#9474;                                         &#9474;
+&#9474;  SELECTED: RED CAR                       &#9474;
+&#9474;  [24pt yellow, underlined]               &#9474;
+&#9474;                                         &#9474;
+&#9474;  SPEED  [====----] 5/8                  &#9474;
+&#9474;  STYLE  [=======- ] 7/8                 &#9474;
+&#9474;  LUCK   [==------] 3/8  (cosmetic only) &#9474;
+&#9474;  [fake stats — all same real speed]      &#9474;
+&#9474;                                         &#9474;
+&#9474;  +-----------------------------+         &#9474;
+&#9474;  |  >> RACE NOW! <<            |         &#9474;
+&#9474;  +-----------------------------+         &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">The main menu becomes a car selection lobby. Players choose their car color (Red, Blue, Green, Orange, Purple) using left/right arrows. A "fake" stats panel (Speed, Style, Luck bars) is shown for each car — purely cosmetic, all cars have identical real stats — but it adds enormous perceived depth and replayability. The selected car becomes the player's car color in the race.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>5 car options rendered using car_visual.gd polygons, displayed in a row</li>
+            <li>Left/right arrow highlights next car with a yellow outline glow</li>
+            <li>Selected car is stored in GameData.player_color, applied in main.tscn _ready()</li>
+            <li>Fake stat bars: 3 ProgressBar nodes per car with pre-set values (vary by car for flavor)</li>
+            <li>Car name label updates dynamically ("RED CAR", "BLUE CAR", etc.)</li>
+            <li>RACE NOW button launches the race with selected color applied</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Add player_color: Color to GameData; apply via car_visual.gd COLOR constant at race start</li>
+            <li>Car thumbnails: 5 SubViewport-rendered car_visual nodes at scale 0.5 in HBoxContainer</li>
+            <li>Selection highlight: PanelContainer StyleBoxFlat border_color set to yellow on focus</li>
+            <li>Stat bars: ProgressBar nodes with max_value=8, value= per car config dict</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENU CONCEPT 5 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">5</div>
+        <div class="concept-title">MINIMAL COUNTDOWN TEASE</div>
+        <div class="difficulty-tag diff-easy">Easy</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;  [solid #0D0D2B — no background art]    &#9474;
+&#9474;                                         &#9474;
+&#9474;                                         &#9474;
+&#9474;       RACING DODGIO                     &#9474;
+&#9474;       [80pt, gold, tight kerning]        &#9474;
+&#9474;       scale-in animation on load         &#9474;
+&#9474;       (TRANS_BACK, 0.6s, 1.5 -> 1.0)    &#9474;
+&#9474;                                         &#9474;
+&#9474;       ── neon arcade racing ──           &#9474;
+&#9474;       [14pt, cyan, letter-spaced]        &#9474;
+&#9474;                                         &#9474;
+&#9474;                                         &#9474;
+&#9474;       [ PRESS ENTER TO START ]           &#9474;
+&#9474;       [20pt white, alpha blink]          &#9474;
+&#9474;                                         &#9474;
+&#9474;                                         &#9474;
+&#9474;       ARROWS=DRIVE                       &#9474;
+&#9474;       STARS=BOOST   DODGE JEEPS          &#9474;
+&#9474;       [12pt, muted #8888BB, bottom]      &#9474;
+&#9474;                                         &#9474;
+&#9474;  [Three purple diagonal bg stripes,      &#9474;
+&#9474;   existing implementation, keep]         &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">The simplest possible upgrade to the existing screen. Removes the current button entirely in favor of "PRESS ENTER TO START" — reducing click friction. Adds a single punchy scale-in animation to the title on load using TRANS_BACK easing (elastic overshoot). Keeps the existing diagonal stripe background. Fast to implement, high perceived polish gain for minimal dev time.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Title arrives with TRANS_BACK scale tween: 1.5 to 1.0 over 0.6s on _ready()</li>
+            <li>Subtitle fades in 0.3s after title lands (Tween alpha 0 to 1)</li>
+            <li>"PRESS ENTER TO START" blinks at 0.8s cycle</li>
+            <li>Enter key OR any arrow key starts race (lowers friction for new players)</li>
+            <li>Controls displayed as 3-item row at bottom, always visible</li>
+            <li>Keeps existing diagonal stripe bg — zero extra work</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Remove StartButton node entirely; handle _input(event) for KEY_ENTER / KEY_UP / KEY_DOWN etc.</li>
+            <li>Title Tween: tween.tween_property(title_label, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_BACK)</li>
+            <li>Blink: tween.tween_property(prompt_label, "modulate:a", 0.1, 0.4).set_loops()</li>
+            <li>Set title_label.pivot_offset = title_label.size / 2 before tweening</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 2 — RESULTS SCREEN
+═══════════════════════════════════════════════════════ -->
+<section id="tab-results" class="section">
+  <div class="section-intro">
+    <h2>RESULTS SCREEN REDESIGN</h2>
+    <p>Five concepts for the post-race finish screen. The current screen has a solid podium card layout — these variants add drama, stats, personality, and replayability hooks.</p>
+  </div>
+
+  <div class="concepts-grid">
+
+    <!-- RESULTS CONCEPT 1 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">1</div>
+        <div class="concept-title">ANIMATED PODIUM RISE</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;   RACE OVER!   [flash in, 0.4s]         &#9474;
+&#9474;   [56pt gold, top-center]               &#9474;
+&#9474;                                         &#9474;
+&#9474;         [2ND]      [1ST]      [3RD]     &#9474;
+&#9474;          BLU        YOU        GRN       &#9474;
+&#9474;         (car)      (car)      (car)      &#9474;
+&#9474;       [silver]    [gold]    [bronze]     &#9474;
+&#9474;  +---------+  +---------+  +---------+  &#9474;
+&#9474;  |         |  |         |  |         |  &#9474;
+&#9474;  | 2ND     |  | 1ST     |  | 3RD     |  &#9474;
+&#9474;  +---------+  +---------+  +---------+  &#9474;
+&#9474;  |  PODIUM |  | PODIUM  |  | PODIUM  |  &#9474;
+&#9474;  |  BLOCK  |  | BLOCK   |  | BLOCK   |  &#9474;
+&#9474;  |  (med)  |  | (tall)  |  | (short) |  &#9474;
+&#9474;  +---------+  +---------+  +---------+  &#9474;
+&#9474;  Blocks rise from bottom (0.8s stagger)  &#9474;
+&#9474;                                         &#9474;
+&#9474;  4TH: AI ORANGE  5TH: AI PURPLE         &#9474;
+&#9474;  [compact row, 14pt, muted]             &#9474;
+&#9474;                                         &#9474;
+&#9474;  [RACE AGAIN]        [QUIT]             &#9474;
+&#9474;  [yellow pill]      [muted outline]     &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A proper sports podium layout. Three colored platform blocks rise from the bottom of the screen in sequence (3rd rises first, then 2nd, then 1st — each 0.3s delayed). Car shape thumbnails sit on top of each block. The 1st place block is tallest. If the player is on the podium, their block gets a gold particle spray. 4th and 5th appear as compact rows below.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Three PanelContainer "podium blocks" sized by place: 1st=180px tall, 2nd=120px, 3rd=80px</li>
+            <li>Blocks animate via Tween position_y from screen_bottom to final_y with TRANS_QUAD</li>
+            <li>Car thumbnails (car_visual.gd, scale 0.4) sit above each block as Node2D children</li>
+            <li>Gold particle spray on 1st: CPUParticles2D at top of block, auto-start if player wins</li>
+            <li>4th/5th: HBoxContainer row with car swatch + name label below the podium</li>
+            <li>Sequence: screen fades in (0.3s) -> blocks rise (staggered) -> cars appear -> buttons appear</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Podium blocks: 3 PanelContainers in HBoxContainer; set custom_minimum_size.y by place</li>
+            <li>Rise tween: start position = Vector2(x, 800), end = Vector2(x, final_y)</li>
+            <li>Car thumbnails: Node2D with car_visual.gd at scale 0.4, positioned above block top edge</li>
+            <li>CPUParticles2D: emission_shape=SPHERE, r=30, color=#FFD91A, lifetime=1.2s, amount=40</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS CONCEPT 2 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">2</div>
+        <div class="concept-title">STATS BREAKDOWN CARD</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  FINAL RESULTS              [52pt gold] &#9474;
+&#9474;                                         &#9474;
+&#9474;  +--------FINISHING ORDER-----------+   &#9474;
+&#9474;  | [*] 1ST  YOU (RED)   -- WINNER!  |   &#9474;
+&#9474;  |     2ND  AI BLUE                 |   &#9474;
+&#9474;  |     3RD  AI GREEN                |   &#9474;
+&#9474;  |     4TH  AI ORANGE               |   &#9474;
+&#9474;  |     5TH  AI PURPLE               |   &#9474;
+&#9474;  +----------------------------------+   &#9474;
+&#9474;                                         &#9474;
+&#9474;  +----------YOUR RACE-----------+       &#9474;
+&#9474;  | STARS COLLECTED     [=====] 7 |       &#9474;
+&#9474;  | TIMES STUNNED             2   |       &#9474;
+&#9474;  | TIME IN BOOST       [===--] 58%|      &#9474;
+&#9474;  | PLACES GAINED           +2   |       &#9474;
+&#9474;  +-------------------------------+       &#9474;
+&#9474;                                         &#9474;
+&#9474;  PERSONAL BEST: YOU FINISHED 1ST!        &#9474;
+&#9474;  [cyan, 14pt, only if PB achieved]       &#9474;
+&#9474;                                         &#9474;
+&#9474;  [RACE AGAIN]           [QUIT]          &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">Adds a "YOUR RACE" stats panel below the finish order. Shows how many stars collected, times stunned, percentage of race spent boosting, and net places gained/lost. This data adds enormous replay motivation — players want to beat their own stats. Track these in race_manager.gd and pass via GameData. A "PERSONAL BEST" line appears only when the player achieves a new best finish position.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Finishing order panel: 5 rows with place number, car color swatch, name, WINNER tag for 1st</li>
+            <li>Stats panel: 4 metrics tracked during race — stars_collected, stun_count, boost_time_ratio, places_gained</li>
+            <li>Stars bar uses ProgressBar (max=10, current=stars_collected)</li>
+            <li>Boost ratio: (total boost seconds / total race seconds) * 100</li>
+            <li>Places gained: (starting_position - finish_position), +N = improved</li>
+            <li>Personal best: persisted in GameData.best_place: int, compare on results load</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Add to GameData: stars_collected, stun_count, boost_total_time, race_total_time</li>
+            <li>race_manager.gd increments these during play; results.gd reads them</li>
+            <li>Stats ProgressBar: theme override fill color = cyan for stars, yellow for boost</li>
+            <li>Slide-in: each panel animates from off-screen right using Tween position</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS CONCEPT 3 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">3</div>
+        <div class="concept-title">MVP SPOTLIGHT</div>
+        <div class="difficulty-tag diff-easy">Easy</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;  +-----------------------------------+  &#9474;
+&#9474;  |  [GOLD GLOW BACKGROUND PANEL]     |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  |     [*** WINNER ***]              |  &#9474;
+&#9474;  |     [gold, 48pt, scale-bounce]    |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  |     [large car shape here]        |  &#9474;
+&#9474;  |     [scale 1.4, centered]         |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  |     YOU (RED CAR)                 |  &#9474;
+&#9474;  |     [28pt white, bold]            |  &#9474;
+&#9474;  |                                   |  &#9474;
+&#9474;  |     "UNSTOPPABLE RACER!"          |  &#9474;
+&#9474;  |     [random flavor text, 16pt]    |  &#9474;
+&#9474;  +-----------------------------------+  &#9474;
+&#9474;                                         &#9474;
+&#9474;  2ND BLUE  3RD GREEN  4TH ORG  5TH PUR &#9474;
+&#9474;  [compact single row, small swatches]   &#9474;
+&#9474;                                         &#9474;
+&#9474;  [RACE AGAIN]              [QUIT]       &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">Puts the spotlight entirely on the race winner — 80% of the screen is a large gold-glowing winner card showing the winning car at scale 1.4 with a randomly selected flavor text compliment. If the player wins, it shows their car. If an AI wins, it shows the AI car. All other places are condensed into a compact single row. Extremely easy to implement and family-friendly — kids love the big winner reveal.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Winner panel: PanelContainer with gold StyleBoxFlat border (4px) and faint gold bg tint</li>
+            <li>Large car shape: car_visual.gd node at scale 1.4, centered in panel</li>
+            <li>Random flavor texts array: "UNSTOPPABLE!", "BORN TO RACE!", "SPEED LEGEND!", "TURBO MASTER!"</li>
+            <li>Flavor text chosen by: flavor_texts[randi() % flavor_texts.size()]</li>
+            <li>Remaining 4 places in HBoxContainer row: color swatch + place + name, 14pt</li>
+            <li>If player wins: add CPUParticles2D gold burst. If AI wins: show "SO CLOSE!" subtitle</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Winner data from GameData.finish_order[0] (name + color)</li>
+            <li>Scale bounce: Tween scale 0.0 to 1.2 to 1.0 with TRANS_BACK in sequence</li>
+            <li>Flavor text: const FLAVORS = ["UNSTOPPABLE!", ...]; label.text = FLAVORS[randi()%FLAVORS.size()]</li>
+            <li>Remaining row: for loop over finish_order[1..4] adding HBoxContainer children</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS CONCEPT 4 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">4</div>
+        <div class="concept-title">REPLAY + SHARE SCREEN</div>
+        <div class="difficulty-tag diff-hard">Hard</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  RACE RESULTS           [48pt gold]     &#9474;
+&#9474;                                         &#9474;
+&#9474;  +--LEFT PANEL--+ +---RIGHT PANEL---+   &#9474;
+&#9474;  | 1ST  YOU RED | | RACE HIGHLIGHTS  |   &#9474;
+&#9474;  | 2ND  AI BLU  | |                  |   &#9474;
+&#9474;  | 3RD  AI GRN  | | Best Boost: 5.0s |   &#9474;
+&#9474;  | 4TH  AI ORG  | | Stars Grabbed: 7 |   &#9474;
+&#9474;  | 5TH  AI PUR  | | Stuns Survived:2 |   &#9474;
+&#9474;  +--------------+ | Lead Changes:  3 |   &#9474;
+&#9474;                   |                  |   &#9474;
+&#9474;                   | RACE SNAPSHOT:   |   &#9474;
+&#9474;                   | [miniature track |   &#9474;
+&#9474;                   |  with car dots   |   &#9474;
+&#9474;                   |  at final pos]   |   &#9474;
+&#9474;                   +------------------+   &#9474;
+&#9474;                                         &#9474;
+&#9474;  [RACE AGAIN]  [VIEW REPLAY]  [QUIT]    &#9474;
+&#9474;  yellow         cyan outline   muted     &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A two-panel results screen. Left panel shows the standard finish order. Right panel shows "Race Highlights" — key stats and a miniature snapshot of the track showing where each car finished (colored dots on a small track outline). A "VIEW REPLAY" button (optional/future feature) stores the concept for later implementation. The track snapshot alone is a high-value visual that takes ~2 hours to implement.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Two-column layout: finish order on left, highlights on right</li>
+            <li>Highlights: best boost duration, stars grabbed, stuns survived, lead changes during race</li>
+            <li>Track snapshot: miniature Line2D re-drawing of the track path at scale 0.08, colored dots for each car's last recorded position</li>
+            <li>Lead changes: race_manager tracks position array each second, counts order changes</li>
+            <li>VIEW REPLAY button: can be disabled/greyed for now as a future feature teaser</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Two HBoxContainer panels, equal width, in main HBoxContainer</li>
+            <li>Track snapshot: copy Path2D curve points, scale by 0.08, draw via Line2D in a Control node</li>
+            <li>Car dots: 5 ColorRect nodes (8x8px, rounded) positioned at last_position * 0.08</li>
+            <li>Store car positions at race end in GameData.final_positions: Array[Vector2]</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS CONCEPT 5 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">5</div>
+        <div class="concept-title">CINEMATIC FINISH SEQUENCE</div>
+        <div class="difficulty-tag diff-hard">Hard</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;  PHASE 1: FINISH LINE FLASH             &#9474;
+&#9474;  Screen flashes white (0.3s)             &#9474;
+&#9474;  -> fade to black                        &#9474;
+&#9474;                                         &#9474;
+&#9474;  PHASE 2: WINNER REVEAL (2s)             &#9474;
+&#9474;  Black screen, then:                     &#9474;
+&#9474;                                         &#9474;
+&#9474;  [center]  *** 1ST PLACE ***             &#9474;
+&#9474;            [letters drop in one-by-one   &#9474;
+&#9474;             from above, 0.08s stagger]   &#9474;
+&#9474;                                         &#9474;
+&#9474;            [large car shape, scale 1.6]  &#9474;
+&#9474;            [rotates 360 deg, 1s]         &#9474;
+&#9474;                                         &#9474;
+&#9474;  PHASE 3: FULL RESULTS SLIDE IN (1.5s)   &#9474;
+&#9474;  Normal results screen slides up         &#9474;
+&#9474;  from bottom while winner panel          &#9474;
+&#9474;  shrinks to top-right corner             &#9474;
+&#9474;                                         &#9474;
+&#9474;  [RACE AGAIN]           [QUIT]          &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A 3-phase cinematic sequence replaces the static cut to results. Phase 1: white flash + fade to black (already partially implemented). Phase 2: dark screen with a dramatic winner reveal — car spins 360 degrees while "1ST PLACE" letters drop in one by one. Phase 3: full results slide up from below while the winner's car shrinks to a corner badge. Maximum drama, highest family-game appeal, most implementation work.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Phase 1: existing FlashRect + scene transition — keep as-is</li>
+            <li>Phase 2: winner car rotates via Tween rotation 0 to TAU (1s, TRANS_SINE)</li>
+            <li>Letter drop-in: individual Label nodes for each character, Tween position_y from -40 to 0</li>
+            <li>Phase 3: results VBoxContainer tweens from y=800 to y=final_y (0.6s, TRANS_QUAD)</li>
+            <li>Winner car shrinks from center to top-right corner: scale 1.6 to 0.4, position tween</li>
+            <li>Skip button: ENTER/SPACE skips phases 2-3 instantly for impatient players</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Use a state machine: enum Phase {FLASH, REVEAL, RESULTS}; advance via Tween.finished signal</li>
+            <li>Letter nodes: split winner_label.text into chars, create Label per char in HBoxContainer</li>
+            <li>Car rotation: tween.tween_property(car_node, "rotation", TAU, 1.0).set_trans(Tween.TRANS_SINE)</li>
+            <li>Skip: _input() checks KEY_ENTER -> _skip_to_results() that jumps state machine to RESULTS</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 3 — HUD
+═══════════════════════════════════════════════════════ -->
+<section id="tab-hud" class="section">
+  <div class="section-intro">
+    <h2>HUD / GAMEPLAY OVERLAY</h2>
+    <p>Five distinct HUD philosophies for during the race. Each prioritizes different information and has a different visual weight. The current HUD is functional — these push further.</p>
+  </div>
+
+  <div class="concepts-grid">
+
+    <!-- HUD CONCEPT 1 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">1</div>
+        <div class="concept-title">CORNER CLUSTER HUD</div>
+        <div class="difficulty-tag diff-easy">Easy</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; +----------+                +---------+ &#9474;
+&#9474; | PLACE    |                | BOOST   | &#9474;
+&#9474; |  1ST     |                | [=====] | &#9474;
+&#9474; | [56pt Y] |                | 3.2s    | &#9474;
+&#9474; +----------+                +---------+ &#9474;
+&#9474;                                         &#9474;
+&#9474;        [GAME WORLD]                     &#9474;
+&#9474;                                         &#9474;
+&#9474;        STUNNED! [48pt red, center]       &#9474;
+&#9474;        (appears only when stunned)       &#9474;
+&#9474;                                         &#9474;
+&#9474;        [BOOST READY] (center, cyan)      &#9474;
+&#9474;        (appears 0.5s when star grabbed)  &#9474;
+&#9474;                                         &#9474;
+&#9474; +---ESC: PAUSE---+         +----------+ &#9474;
+&#9474; [10pt muted, btm-L]        | GRIDDY   | &#9474;
+&#9474;                            | SPECTATOR| &#9474;
+&#9474;                            +----------+ &#9474;
+&#9474;                                         &#9474;
+&#9474; [====BOOST BAR — FULL WIDTH — BOTTOM==] &#9474;
+&#9474; yellow=boost, red=stun, hidden=idle      &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">All persistent info pushed to corners. Center screen stays completely clear during normal play — only temporary messages (STUNNED!, BOOST READY) pop into the center and fade out. Place is top-left, boost timer/bar is top-right. A full-width boost bar runs along the bottom edge only when active. This is the highest "game world visibility" HUD possible.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Place panel: top-left PanelContainer, 56pt yellow numeral + suffix</li>
+            <li>Boost panel: top-right, ProgressBar + countdown seconds label</li>
+            <li>Center messages: STUNNED! and BOOST READY appear center-screen, fade via Tween</li>
+            <li>Bottom boost bar: full-width ProgressBar, visible only during boost/stun states</li>
+            <li>Griddy spectator: bottom-right panel, existing implementation</li>
+            <li>ESC hint: bottom-left, 10pt muted — very low visual weight</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Uses existing HUD structure — rearrange anchor positions of panels</li>
+            <li>Center labels: anchor preset = CENTER, pivot_offset = size/2</li>
+            <li>Center label fade: tween alpha 1.0 -> 0.0 over 0.8s after 1.0s delay</li>
+            <li>BoostPanel visible = false when boost_time <= 0 and stun_time <= 0</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD CONCEPT 2 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">2</div>
+        <div class="concept-title">MINIMAP RACE TRACKER</div>
+        <div class="difficulty-tag diff-hard">Hard</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; +--PLACE--+               +----------+ &#9474;
+&#9474; |  1ST    |               | MINIMAP  | &#9474;
+&#9474; | [56pt]  |               | +------+ | &#9474;
+&#9474; +--BOOST--+               | |  o   | | &#9474;
+&#9474; | BOOST!  |               | | o  o | | &#9474;
+&#9474; | [====] 3s               | |o     | | &#9474;
+&#9474; +---------+               | +------+ | &#9474;
+&#9474;                           | YOU=RED  | &#9474;
+&#9474;                           | BLU=o    | &#9474;
+&#9474;                           +----------+ &#9474;
+&#9474;                                         &#9474;
+&#9474;       [GAME WORLD]                      &#9474;
+&#9474;                                         &#9474;
+&#9474;                                         &#9474;
+&#9474; +---ESC: PAUSE---+                      &#9474;
+&#9474;                                         &#9474;
+&#9474; [====BOOST BAR == BOTTOM == FULL-WIDTH=] &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">Adds a top-right minimap panel showing the full track outline with colored dots for all 5 cars. The player dot is slightly larger and labeled "YOU". This transforms the race from blind guessing to strategic awareness — you can see where opponents are at all times. High implementation effort but massive gameplay upgrade.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Minimap panel: 120x120px PanelContainer, semi-opaque dark bg</li>
+            <li>Track outline: Line2D with Path2D curve points scaled to fit 100x100px viewport</li>
+            <li>Car dots: 5 ColorRect nodes (6x6px) positioned at car.global_position * minimap_scale</li>
+            <li>Player dot: 8x8px, white border, labeled "YOU" in 8pt below</li>
+            <li>Dots update every _process frame via minimap_scale = 100.0 / track_bounds.size</li>
+            <li>Minimap rotates with the track orientation (fixed north-up orientation)</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>MinimapControl: custom Control node with _draw() override drawing track lines and car dots</li>
+            <li>queue_redraw() called each frame to refresh dot positions</li>
+            <li>Track bounds: compute Rect2 from Path2D curve bake_interval points in _ready()</li>
+            <li>minimap_scale = Vector2(100,100) / track_bounds.size; offset = -track_bounds.position * minimap_scale</li>
+            <li>Car references: get 5 car nodes in race_manager, pass array to minimap control</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD CONCEPT 3 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">3</div>
+        <div class="concept-title">SPEEDOMETER DIAL</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; +--PLACE--+                             &#9474;
+&#9474; |  1ST    |                             &#9474;
+&#9474; | [56pt Y]|                             &#9474;
+&#9474; +---------+                             &#9474;
+&#9474;                                         &#9474;
+&#9474;       [GAME WORLD]                      &#9474;
+&#9474;                                         &#9474;
+&#9474;                      +----------------+ &#9474;
+&#9474;                      |  SPEEDOMETER   | &#9474;
+&#9474;                      |   /-------\    | &#9474;
+&#9474;                      |  / 60 80  \   | &#9474;
+&#9474;                      | |40   100  |  | &#9474;
+&#9474;                      | |    /     |  | &#9474;
+&#9474;                      |  \ 20  *  /   | &#9474;
+&#9474;                      |   \_______/   | &#9474;
+&#9474;                      |     MPH       | &#9474;
+&#9474;                      +----------------+ &#9474;
+&#9474;                                         &#9474;
+&#9474; ESC: PAUSE                              &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">Replaces all speed/boost text with an analog speedometer dial drawn via Polygon2D arcs in the bottom-right corner. The needle rotates based on current speed (normal vs boost). During boost, the needle pins to max and the dial glows yellow. During stun, the needle drops to zero with a red glow. Pure visual delight — makes the car feel fast in a way text labels cannot.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Dial background: Circle approximation via Polygon2D (32 points), dark bg with purple border</li>
+            <li>Arc ticks: 5-7 Line2D nodes at fixed angles for speed markings (20, 40, 60, 80, 100)</li>
+            <li>Needle: single Line2D from center, rotated by lerp(min_angle, max_angle, speed_ratio)</li>
+            <li>Glow effect: behind the needle, a second Line2D at width=4, yellow/red/muted by state</li>
+            <li>Speed ratio: normal=0.5, boost=1.0, stun=0.0 — lerp needle toward target each frame</li>
+            <li>Dial size: 100x100px area, bottom-right corner panel</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>SpeedometerControl: Node2D with _draw() using draw_arc(), draw_line() calls</li>
+            <li>Needle angle: lerp current_angle toward target_angle by 8*delta each frame (smooth)</li>
+            <li>Normal angle range: -150deg to +150deg (in radians: -2.62 to 2.62)</li>
+            <li>Boost state: target = deg_to_rad(150); stun state: target = deg_to_rad(-150)</li>
+            <li>queue_redraw() in _process for live updates</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD CONCEPT 4 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">4</div>
+        <div class="concept-title">RACE POSITION STRIP</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474; TOP BAR (full-width, 40px tall, opaque) &#9474;
+&#9474; [GRN] 3rd  [BLU] 2nd  [YOU] 1st        &#9474;
+&#9474;  [ORG] 4th             [PUR] 5th        &#9474;
+&#9474; Race positions — car swatches + place   &#9474;
+&#9474; Dots on horizontal "track" line         &#9474;
+&#9474; YOU dot is brighter / larger            &#9474;
+&#9474; Updates live as position changes        &#9474;
+&#9474;                                         &#9474;
+&#9474;       [GAME WORLD]                      &#9474;
+&#9474;                                         &#9474;
+&#9474;                                         &#9474;
+&#9474;                                         &#9474;
+&#9474; +---ESC: PAUSE---+       +--BOOST----+ &#9474;
+&#9474;                          | BOOST! 3s | &#9474;
+&#9474;                          +-----------+ &#9474;
+&#9474; [====BOOST BAR — FULL WIDTH — BOTTOM==] &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A full-width "position strip" runs across the very top of the screen — a horizontal race order visualization where car color dots slide left and right as positions change. Think of it like an F1 timing tower laid sideways. The player's dot is larger and brighter. When you overtake someone, their dot slides visibly to the right of yours. Extremely readable at a glance.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Top strip: full-width ColorRect 40px tall, dark navy 85% opacity</li>
+            <li>5 car dots positioned by PathFollow2D progress (0.0 to 1.0 * strip_width)</li>
+            <li>Car labels show abbreviated name above each dot ("YOU", "BLU", "GRN")</li>
+            <li>Player dot: 14x14px, white border ring, yellow fill</li>
+            <li>AI dots: 10x10px, colored fill matching car color</li>
+            <li>Dots animate smoothly via lerp toward target x position each frame</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>RaceStripControl: custom Control node at top of HUD CanvasLayer</li>
+            <li>_draw(): draw_rect for background, then draw_circle for each car dot</li>
+            <li>Car x position: (car.path_follow.progress_ratio) * strip_width</li>
+            <li>Smooth movement: dot_positions[i] = lerp(dot_positions[i], target_x, 6*delta)</li>
+            <li>queue_redraw() in _process; get car progress_ratio from ai_car.gd / player_car.gd</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD CONCEPT 5 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">5</div>
+        <div class="concept-title">DIEGETIC DASHBOARD</div>
+        <div class="difficulty-tag diff-hard">Hard</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;       [GAME WORLD — NO HUD OVERLAY]     &#9474;
+&#9474;                                         &#9474;
+&#9474;       STUNNED! (world-space popup        &#9474;
+&#9474;       floats above car, fades out)       &#9474;
+&#9474;                                         &#9474;
+&#9474;       +BOOST! (world-space popup         &#9474;
+&#9474;       floats up from star pickup)        &#9474;
+&#9474;                                         &#9474;
+&#9474;                                         &#9474;
+&#9474;  +--PLACE BADGE--+        BOOST RING:   &#9474;
+&#9474;  |  YOU: 1ST     |        Color ring     &#9474;
+&#9474;  |  [corner only]|        glows around   &#9474;
+&#9474;  +---------------+        player car     &#9474;
+&#9474;                           yellow=boost   &#9474;
+&#9474;                           red=stun       &#9474;
+&#9474;                           none=normal    &#9474;
+&#9474;  ESC: PAUSE [tiny corner]                &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">Minimizes the HUD to near-zero by making status information diegetic — embedded in the game world rather than overlaid on screen. The player car gets a colored glow ring (yellow=boosting, red=stunned, none=normal) that communicates state without any text. World-space floating text appears above the car for events ("+BOOST!", "STUNNED!") and floats upward then fades. Only the place badge survives as a small corner element.</p>
+          <h4>Key Features</h4>
+          <ul class="feature-list">
+            <li>Boost/stun ring: Polygon2D circle arc around player car, color changes by state, scale pulses</li>
+            <li>World-space popups: Label nodes added as children of player car, animate upward then queue_free</li>
+            <li>Place badge: corner PanelContainer, minimal — just "1ST" in 28pt</li>
+            <li>ESC hint: 8pt, 40% opacity, bottom-left — barely visible unless looked for</li>
+            <li>No boost bar, no boost timer, no Griddy panel — maximum game world immersion</li>
+            <li>Colorblind support: ring pattern changes shape too (solid for boost, dashed for stun)</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Glow ring: Polygon2D with 32 points, radius=28 (car size + margin), modulate changes by state</li>
+            <li>Ring pulse: Tween scale 1.0 to 1.08 looping during boost</li>
+            <li>World popup: func _spawn_popup(text): instantiate Label, add_child to car, tween position_y -60 over 1s, then queue_free</li>
+            <li>Stun "dashed" look: alternate Polygon2D visibility with Timer at 0.1s intervals</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 4 — TRACK / MAP DESIGNS
+═══════════════════════════════════════════════════════ -->
+<section id="tab-track" class="section">
+  <div class="section-intro">
+    <h2>TRACK / MAP DESIGNS</h2>
+    <p>Five track concepts that go beyond the current oval. Each has a distinct shape, theme, and gameplay implication. All are implementable via Godot Path2D waypoints and Line2D road drawing.</p>
+  </div>
+
+  <div class="concepts-grid">
+
+    <!-- TRACK CONCEPT 1 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">1</div>
+        <div class="concept-title">FIGURE-8 CROSSOVER</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;    +---------+          +---------+     &#9474;
+&#9474;   /           \        /           \    &#9474;
+&#9474;  |  TOP-LEFT   |      |  TOP-RIGHT  |   &#9474;
+&#9474;  |    LOOP     |      |    LOOP     |   &#9474;
+&#9474;   \           /        \           /    &#9474;
+&#9474;    +----   ---+----------+---   ----+   &#9474;
+&#9474;         \ /                   \ /       &#9474;
+&#9474;          X  <-- CROSSOVER PT   X        &#9474;
+&#9474;         / \                   / \       &#9474;
+&#9474;    +----   ---+----------+---   ----+   &#9474;
+&#9474;   /           \        /           \    &#9474;
+&#9474;  | BOTTOM-LEFT |      | BOTTOM-RIGHT|   &#9474;
+&#9474;  |    LOOP     |      |    LOOP     |   &#9474;
+&#9474;   \           /        \           /    &#9474;
+&#9474;    +---------+    [S/F]  +---------+    &#9474;
+&#9474;                                         &#9474;
+&#9474; [S/F] = Start/Finish line (bottom)      &#9474;
+&#9474; [X] = Crossover — cars can collide!     &#9474;
+&#9474; Stars and jeeps cluster near crossover  &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A figure-8 double loop creates an exciting crossover intersection where cars going in opposite path directions pass through the same road space. Since all cars follow the same PathFollow2D they won't physically collide (game logic-wise), but visually it creates exciting near-miss drama at the crossing points. Stars and jeep hazards placed at the crossover reward/punish the risky center area.</p>
+          <h4>Track Shape Details</h4>
+          <ul class="feature-list">
+            <li>Two oval loops connected in the center by crossing straightaways</li>
+            <li>Total waypoints: ~18-22 points for a smooth figure-8 curve</li>
+            <li>Map size: ~2400x1600px world space (camera follows player as before)</li>
+            <li>Crossover zone: visually marked with chevron lines on road surface (Line2D children)</li>
+            <li>Star spawns concentrated at crossover + far ends of each loop</li>
+            <li>Jeep hazards on the straight sections between loops</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Replace current Path2D curve points with figure-8 waypoint array</li>
+            <li>Curve handle types: set all to CURVE_MODE_NONE for sharp, or CURVE_MODE_AUTO for smooth</li>
+            <li>Road Line2D drawn along same path, width=280px as established</li>
+            <li>Crossover visual: 4 diagonal Line2D stripes (white, width=6) at the intersection</li>
+            <li>Jeep spawn zones: define 2 Rect2 spawn_zones arrays; sample random position within each</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACK CONCEPT 2 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">2</div>
+        <div class="concept-title">CITY BLOCK CIRCUIT</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;  +-----+  +--BLOCK--+  +-----+         &#9474;
+&#9474;  |     |  |[BUILDING]|  |     |         &#9474;
+&#9474;  | BLK |  | (purple) |  | BLK |         &#9474;
+&#9474;  |     |  +-----------+  |     |         &#9474;
+&#9474;  +--+--+                 +--+--+         &#9474;
+&#9474;     |   STRAIGHT ROAD       |            &#9474;
+&#9474;  +--+--+  +--BLOCK--+  +--+--+         &#9474;
+&#9474;  |     |  |[BUILDING]|  |     |         &#9474;
+&#9474;  | BLK |  | (teal)   |  | BLK |         &#9474;
+&#9474;  |     |  +-----------+  |     |         &#9474;
+&#9474;  +--+--+                 +--+--+         &#9474;
+&#9474;     |                       |            &#9474;
+&#9474;  ROAD squares route, 90-deg corners      &#9474;
+&#9474;                                         &#9474;
+&#9474;  [S/F] on bottom straight               &#9474;
+&#9474;  NEON SIGNS mark each building block     &#9474;
+&#9474;  (ColorRect panels in world space)       &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A rectangular city block circuit with 90-degree corners and straight sections. The center of each block is filled with a "building" (dark ColorRect with a neon-colored outline) that acts as visual world-building. The tight corners reward controlled driving and punish over-steering. Straight sections are where star/jeep action concentrates. The neon building signs give each section of track a distinct landmark identity — critical for navigating a top-down track.</p>
+          <h4>Track Shape Details</h4>
+          <ul class="feature-list">
+            <li>Rectangular route: 4 corner turns + 4 straight sections, ~16 waypoints</li>
+            <li>Map size: ~2000x1400px, buildings fill center of each rectangular block</li>
+            <li>Corner radius: curve handles adjust to make 90-deg feel smooth to drive</li>
+            <li>Buildings: 4-6 ColorRect nodes with styled borders (purple, teal, gold, red)</li>
+            <li>Neon building labels: "NOODLE JOINT", "ARCADE", "BOOST SHOP", "JUNKYARD"</li>
+            <li>Stars cluster on straights; jeeps patrol corners</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Path2D: 16-20 waypoints forming a rectangle with rounded corners (8 corner points per turn)</li>
+            <li>Buildings: Node2D children of main.tscn, positioned by world coordinate — no physics needed</li>
+            <li>Building visuals: PanelContainer with StyleBoxFlat + colored border, Label child with name</li>
+            <li>Corner curb stripes: existing alternating Line2D implementation works perfectly here</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACK CONCEPT 3 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">3</div>
+        <div class="concept-title">HAIRPIN MOUNTAIN PASS</div>
+        <div class="difficulty-tag diff-medium">Medium</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;   <====== LONG STRAIGHT (top) ======>   &#9474;
+&#9474;                                  |      &#9474;
+&#9474;   HAIRPIN 1 (U-turn) <====       |      &#9474;
+&#9474;   |                     |        |      &#9474;
+&#9474;   |   ===> STRAIGHT ===>|        |      &#9474;
+&#9474;   |                              |      &#9474;
+&#9474;   |   HAIRPIN 2 (U-turn) <===   |      &#9474;
+&#9474;   |   |                   |     |      &#9474;
+&#9474;   |   | ===> STRAIGHT ===>|     |      &#9474;
+&#9474;   |   |                         |      &#9474;
+&#9474;   |   HAIRPIN 3 (U-turn) <===  |      &#9474;
+&#9474;   |                              |      &#9474;
+&#9474;   <====== LONG STRAIGHT (btm) =>       &#9474;
+&#9474;                       [S/F]            &#9474;
+&#9474;                                         &#9474;
+&#9474;  Like a mountain switchback road        &#9474;
+&#9474;  Hairpins are dramatic overtake points  &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">A zigzag switchback track with 3 tight U-turn hairpins connecting long horizontal straights. Inspired by mountain pass roads. The straights are where cars can close gaps and boosts matter. The hairpins are where position is won or lost — tight enough that boosting through them is risky. Different from an oval in that the straights encourage full boost use while hairpins punish it. Adds tactical decision-making even in an arcade game.</p>
+          <h4>Track Shape Details</h4>
+          <ul class="feature-list">
+            <li>3 horizontal straights connected by tight U-turn curves at alternating ends</li>
+            <li>Total waypoints: ~20-24 for smooth hairpin curves</li>
+            <li>Map size: ~3000x1200px (wide and tall) — camera zoom may need to be wider</li>
+            <li>Hairpin zones: visually marked with warning chevrons (Line2D, orange)</li>
+            <li>Star pickups: at ends of each straight, forcing a decision to grab before the turn</li>
+            <li>Jeep hazards: patrol the straights, creating dodge challenges on the fast sections</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Path2D waypoints: U-turns require 6-8 control points each to feel smooth</li>
+            <li>Camera zoom: consider reducing zoom to 0.7 on this track to show more world</li>
+            <li>Chevron markers: 3-4 Line2D nodes at each hairpin entry, angled at 45deg, orange color</li>
+            <li>Background color: gradient from dark green (bottom) to purple (top) to suggest elevation</li>
+            <li>Road shoulder: darker green ColorRect suggesting cliff/drop-off on outer edge</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACK CONCEPT 4 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">4</div>
+        <div class="concept-title">SHORTCUT SPLIT TRACK</div>
+        <div class="difficulty-tag diff-hard">Hard</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;  ====MAIN OUTER LOOP (long, safe)====   &#9474;
+&#9474;  |                               |      &#9474;
+&#9474;  |   [ SPLIT ZONE ]              |      &#9474;
+&#9474;  | OUTER: safe, no hazards   |   |      &#9474;
+&#9474;  |   |                       |   |      &#9474;
+&#9474;  |  [SHORTCUT: INNER PATH]   |   |      &#9474;
+&#9474;  |   hazards + stars         |   |      &#9474;
+&#9474;  |   tighter radius          |   |      &#9474;
+&#9474;  |   [MERGE ZONE]            |   |      &#9474;
+&#9474;  |                               |      &#9474;
+&#9474;  ====================================   &#9474;
+&#9474;                                         &#9474;
+&#9474;  Player must steer OFF path to use      &#9474;
+&#9474;  shortcut (leaves PathFollow2D)         &#9474;
+&#9474;  Stars on shortcut = high risk/reward   &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">The most ambitious track concept — a main loop with a visible shortcut lane that cuts a corner. The player can choose to take the shortcut (shorter distance but loaded with jeep hazards and a tighter turn radius) or stay on the safe outer loop. The shortcut has stars placed inside it to maximize the temptation. AI cars only ever use the main path. This creates genuine risk-vs-reward decision making every lap.</p>
+          <h4>Track Shape Details</h4>
+          <ul class="feature-list">
+            <li>Main Path2D: standard oval/loop — AI cars follow this via PathFollow2D as normal</li>
+            <li>Shortcut: a second visual road section (Line2D) that branches off and rejoins the main path</li>
+            <li>Player enters shortcut by steering toward it (leaves _constrain_to_road() zone)</li>
+            <li>Shortcut entry/exit markers: "SHORTCUT" labels + arrow Line2D signs in world space</li>
+            <li>Shortcut content: 2-3 stars + 2 jeep hazards packed into the short corridor</li>
+            <li>Progress advantage: shortcut rejoins path ~15% ahead — meaningful but not dominant</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Shortcut road: Line2D with width=220 (slightly narrower) branching from main road visually</li>
+            <li>Disable _constrain_to_road() when player is within shortcut_zone Rect2 area</li>
+            <li>Shortcut zone detection: if player.global_position is inside shortcut_entry_rect, set in_shortcut=true</li>
+            <li>When shortcut exit is reached, snap player progress_ratio to shortcut_exit_ratio on main path</li>
+            <li>Entry/exit signs: Label + ColorRect in world space, no physics needed</li>
+            <li>Note: this requires the most custom player_car.gd logic of all track concepts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACK CONCEPT 5 -->
+    <div class="concept-card">
+      <div class="concept-header">
+        <div class="concept-number">5</div>
+        <div class="concept-title">NEON STAR MAP</div>
+        <div class="difficulty-tag diff-easy">Easy</div>
+      </div>
+      <div class="concept-body">
+        <div class="wireframe-block">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                         &#9474;
+&#9474;  [WORLD BG: deep navy + star field]     &#9474;
+&#9474;  small white dots, random, static        &#9474;
+&#9474;                                         &#9474;
+&#9474;    *    *         *        *            &#9474;
+&#9474;       *     +-----LOOP A-----+   *     &#9474;
+&#9474;    *       /                  \         &#9474;
+&#9474;           /  ROAD: CYAN GLOW   \        &#9474;
+&#9474;          |   neon blue #00E5FF  |       &#9474;
+&#9474;    *     |   with outer glow    |   *   &#9474;
+&#9474;          |   (width=280, same)  |       &#9474;
+&#9474;           \                    /        &#9474;
+&#9474;            +------LOOP B------+         &#9474;
+&#9474;    *              [S/F]             *   &#9474;
+&#9474;       *    *          *      *          &#9474;
+&#9474;                                         &#9474;
+&#9474;  Shape: elongated oval with chicane      &#9474;
+&#9474;  Road drawn in CYAN not gray            &#9474;
+&#9474;  Background: static starfield dots       &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;</div>
+        <div class="details-panel">
+          <h4>Concept</h4>
+          <p class="concept-desc">The easiest track upgrade — same oval shape (or a slightly more interesting elongated oval with a chicane kink) but with a complete visual overhaul of the environment. The road changes from warm gray to neon cyan. The background changes from flat green to a deep navy star field (200-300 small white dots scattered in _draw()). The result is a "racing through space" aesthetic that matches the neon arcade theme perfectly. Zero new track logic — pure visual upgrade.</p>
+          <h4>Track Shape Details</h4>
+          <ul class="feature-list">
+            <li>Base shape: current 10-point oval — no changes to Path2D required</li>
+            <li>Optional chicane: add 2 S-curve waypoints mid-track for a kink</li>
+            <li>Road Line2D color: #00E5FF (cyan) instead of current warm gray</li>
+            <li>Road shoulder: dark navy #0D0D2B instead of green</li>
+            <li>Background: Node2D with _draw() plotting 250 random white dots (2-3px radius)</li>
+            <li>Center line: white dashes, same existing implementation</li>
+          </ul>
+          <h4>Godot Implementation</h4>
+          <ul class="feature-list">
+            <li>Road Line2D default_color = Color(0.0, 0.898, 1.0) — single line change</li>
+            <li>RoadShoulder ColorRect color = Color(0.039, 0.027, 0.118) — single line change</li>
+            <li>Starfield: Node2D child of main.tscn, _draw() uses draw_circle(random_pos, 1.5, Color(1,1,1,0.6))</li>
+            <li>Store star positions in _ready() as array: for i in 250: stars.append(Vector2(randf()*world_w, randf()*world_h))</li>
+            <li>Chicane: insert 2 new curve points at mid-path, handle type AUTO</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site-footer">
+  Racing Dodgio — Design Concepts Document &nbsp;|&nbsp; UIUXVisionary &nbsp;|&nbsp; 2026-03-07
+  &nbsp;|&nbsp; All concepts target Godot 4.6 GDScript with no external assets or shaders
+</footer>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>

@@ -10,8 +10,10 @@ const _WINDSHIELD = Color(0.15, 0.20, 0.35, 0.88)
 const _FONT_SIZE  = 14
 
 
+var is_player_car: bool = false
+
 func _process(_delta: float) -> void:
-	if car_type == "player":
+	if is_player_car:
 		# Redraw every frame so boost glow reacts to boost_time changes
 		queue_redraw()
 
@@ -23,6 +25,13 @@ func _draw() -> void:
 		"green":  _draw_green()
 		"orange": _draw_orange()
 		"purple": _draw_purple()
+
+	# Boost exhaust glow — works for any car type when driven by player
+	if is_player_car:
+		var parent = get_parent()
+		if parent and "boost_time" in parent and parent.boost_time > 0:
+			draw_arc(Vector2(0, 40), 10, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.65), true)
+			draw_arc(Vector2(0, 40), 17, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.22), true)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -77,12 +86,6 @@ func _draw_player() -> void:
 	# Taillights
 	draw_rect(Rect2(-20,  34,  7, 4), Color(0.90, 0.10, 0.10, 1))
 	draw_rect(Rect2( 13,  34,  7, 4), Color(0.90, 0.10, 0.10, 1))
-
-	# Boost exhaust glow (only when boost is active)
-	var parent = get_parent()
-	if parent and "boost_time" in parent and parent.boost_time > 0:
-		draw_arc(Vector2(0, 40), 10, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.65), true)
-		draw_arc(Vector2(0, 40), 17, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.22), true)
 
 	_initial("Y")
 

@@ -24,11 +24,6 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed("ui_cancel"):
-		GameData.clear()
-		get_tree().change_scene_to_file("res://main_menu.tscn")
-		return
-
 	if not is_racing or has_finished:
 		return
 

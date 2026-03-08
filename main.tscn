@@ -4,6 +4,7 @@
 [ext_resource type="Script"    path="res://player_car.gd"     id="2_player"]
 [ext_resource type="Texture2D" path="res://Red Car.png"       id="3_car"]
 [ext_resource type="Script"    path="res://griddy_figure.gd"  id="4_griddy_fig"]
+[ext_resource type="Script"    path="res://minimap.gd"        id="5_minimap"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.07, 0.06, 0.18, 0.92)
@@ -295,6 +296,17 @@ text = "..."
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.8, 0.7, 1.0, 1)
 
+; ── Minimap Race Tracker (top-right, below StandPanel) ───────────────────
+[node name="Minimap" type="Control" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 250.0
+offset_right = -20.0
+offset_bottom = 370.0
+script = ExtResource("5_minimap")
+mouse_filter = 2
+
 ; ── Griddy figure (positioned over GriddyFrame at runtime) ───────────────
 [node name="GriddyKid" type="Node2D" parent="HUD"]
 position = Vector2(0, 0)
@@ -318,4 +330,96 @@ horizontal_alignment = 1
 text = "MOVED UP!"
 theme_override_font_sizes/font_size = 38
 theme_override_colors/font_color = Color(0.2, 1.0, 0.4, 1)
+visible = false
+
+; ── Finish Banner (shown when player crosses finish) ──────────────────────
+[node name="FinishBanner" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.28
+anchor_right = 0.5
+anchor_bottom = 0.28
+offset_left = -280.0
+offset_top = -50.0
+offset_right = 280.0
+offset_bottom = 50.0
+horizontal_alignment = 1
+text = "RACE COMPLETE!"
+theme_override_font_sizes/font_size = 54
+theme_override_colors/font_color = Color(0.2, 1.0, 0.4, 1)
+visible = false
+
+; ── AI Intro Card (shown before countdown) ────────────────────────────────
+[node name="IntroCard" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_top = 0.44
+anchor_right = 0.5
+anchor_bottom = 0.44
+offset_left = -310.0
+offset_top = -35.0
+offset_right = 310.0
+offset_bottom = 35.0
+horizontal_alignment = 1
+text = "You vs Blue, Green, Orange, Purple"
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(0.9, 0.85, 1.0, 1)
+visible = false
+
+; ── ESC Confirmation Dialog ───────────────────────────────────────────────
+[node name="EscDialog" type="Control" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+process_mode = 3
+
+[node name="EscOverlay" type="ColorRect" parent="HUD/EscDialog"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.72)
+mouse_filter = 0
+
+[node name="EscPanel" type="PanelContainer" parent="HUD/EscDialog"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -195.0
+offset_top = -82.0
+offset_right = 195.0
+offset_bottom = 82.0
+
+[node name="EscVBox" type="VBoxContainer" parent="HUD/EscDialog/EscPanel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="EscTitle" type="Label" parent="HUD/EscDialog/EscPanel/EscVBox"]
+layout_mode = 2
+text = "Quit Race?"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+
+[node name="EscBtnRow" type="HBoxContainer" parent="HUD/EscDialog/EscPanel/EscVBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="EscYesBtn" type="Button" parent="HUD/EscDialog/EscPanel/EscVBox/EscBtnRow"]
+custom_minimum_size = Vector2(140, 44)
+text = "YES - Quit"
+theme_override_font_sizes/font_size = 16
+process_mode = 3
+
+[node name="EscNoBtn" type="Button" parent="HUD/EscDialog/EscPanel/EscVBox/EscBtnRow"]
+custom_minimum_size = Vector2(190, 44)
+text = "NO - Keep Racing"
+theme_override_font_sizes/font_size = 16
+process_mode = 3
+
+; ── Scene fade overlay (used for all scene transitions) ───────────────────
+[node name="FadeOverlay" type="ColorRect" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0)
+mouse_filter = 2
+z_index = 200
 visible = false
