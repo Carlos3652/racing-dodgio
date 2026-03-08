@@ -17,6 +17,8 @@ const TRACK_POINTS = [
 ]
 
 const ROAD_WIDTH     = 280.0
+const BUMP_DIST      = 55.0   # car-to-car collision distance
+const BUMP_COOLDOWN  = 2.0    # seconds between bump checks per pair
 const SHOULDER_W     = 340.0
 const ROAD_COLOR     = Color(0.172, 0.172, 0.220, 1)
 const SHOULDER_COLOR = Color(0.102, 0.180, 0.102, 1)
@@ -59,6 +61,7 @@ var finish_pos: Vector2
 
 var cookie_timers: Dictionary = {}
 var jeep_timers:   Dictionary = {}
+var bump_cooldowns: Dictionary = {}  # pair key -> seconds remaining
 var obstacles: Array = []  # all cookie + jeep sprites — avoids scanning get_children() every frame
 
 # HUD node refs
@@ -291,8 +294,34 @@ func _build_track_path() -> void:
 
 	finish_pos = TRACK_POINTS[TRACK_POINTS.size() - 1]
 
+	# Compute start direction and perpendicular for lane offsets
+	var start_dir = (TRACK_POINTS[1] - TRACK_POINTS[0]).normalized()
+	var start_perp = Vector2(-start_dir.y, start_dir.x)  # perpendicular (right of travel)
+
+	# Build AI roster — skip the color the player chose
+	var ai_roster: Array = []
+	for i in range(AI_NAMES.size()):
+		if AI_NAMES[i].to_lower() == GameData.player_car_type or \
+		   (GameData.player_car_type == "player" and AI_NAMES[i] == ""):
+			continue
+		ai_roster.append({name = AI_NAMES[i], color = AI_COLORS[i]})
+	var spawn_count = min(ai_roster.size(), 4)
+
+	# Lane offsets: spread all cars evenly across the road width
+	# total_slots = 1 (player) + spawn_count (AI)
+	var total_slots = 1 + spawn_count
+	var lane_offsets: Array = []
+	for i in range(total_slots):
+		# Evenly spaced from -half_road to +half_road
+		var t = (float(i) / float(total_slots - 1)) - 0.5 if total_slots > 1 else 0.0
+		lane_offsets.append(t * ROAD_WIDTH * 0.7)  # 70% of road to leave margin
+
+	# Player gets the middle lane (or first if odd)
+	var player_lane_idx = total_slots / 2
+
 	player = $PlayerCar
 	player.scale = CAR_SCALE
+	player.position = TRACK_POINTS[0] + start_perp * lane_offsets[player_lane_idx]
 	player.finish_position = finish_pos
 	player.finished.connect(_on_car_finished)
 	camera = $PlayerCar/Camera2D
@@ -304,25 +333,21 @@ func _build_track_path() -> void:
 	pvis.is_player_car = true
 	player.add_child(pvis)
 
-	# Build AI roster — skip the color the player chose
-	var ai_roster: Array = []
-	for i in range(AI_NAMES.size()):
-		if AI_NAMES[i].to_lower() == GameData.player_car_type or \
-		   (GameData.player_car_type == "player" and AI_NAMES[i] == ""):
-			continue
-		ai_roster.append({name = AI_NAMES[i], color = AI_COLORS[i]})
-
-	# If player picked an AI color, we have 3 AI; otherwise 4. Cap at 4.
-	var spawn_count = min(ai_roster.size(), 4)
+	# Spawn AI cars in remaining lanes
+	var ai_lane = 0
 	for i in range(spawn_count):
+		if ai_lane == player_lane_idx:
+			ai_lane += 1
 		var ai = preload("res://ai_car.gd").new()
-		ai.car_label = ai_roster[i].name
-		ai.car_color = ai_roster[i].color
-		ai.progress  = float(i) * 40.0
-		ai.scale     = CAR_SCALE
+		ai.car_label    = ai_roster[i].name
+		ai.car_color    = ai_roster[i].color
+		ai.progress     = 10.0  # slight offset so they're not at exact point 0
+		ai.lane_offset  = lane_offsets[ai_lane]
+		ai.scale        = CAR_SCALE
 		ai.finished.connect(_on_car_finished)
 		track_path.add_child(ai)
 		ai_cars.append(ai)
+		ai_lane += 1
 
 	total_cars = 1 + ai_cars.size()  # player + AI
 
@@ -487,8 +512,13 @@ func _update_hud(delta: float) -> void:
 	hud_timer.text = "%d:%05.2f" % [mins, secs]
 	hud_speed.text = "%d km/h" % player.get_speed_kmh()
 
-	# Boost status label — only visible during boost or stun (hidden when idle)
-	if player.crash_time > 0:
+	# Boost status label — only visible during boost, stun, or bump (hidden when idle)
+	if player.bump_time > 0 and player.crash_time <= 0:
+		hud_boost_status.visible = true
+		hud_div3.visible         = true
+		hud_boost_status.text    = "BUMPED! %.1fs" % player.bump_time
+		hud_boost_status.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2, 1))
+	elif player.crash_time > 0:
 		hud_boost_status.visible = true
 		hud_div3.visible         = true
 		hud_boost_status.text    = "STUNNED %.1fs" % player.crash_time
@@ -578,6 +608,7 @@ func _process(delta: float) -> void:
 			_update_hud(delta)
 			_constrain_to_road()
 			_check_player_collisions()  # check before respawn so newly-visible items can't hit same frame
+			_check_car_bumps(delta)
 			_tick_respawns(delta)
 			_check_force_finish(delta)
 
@@ -626,6 +657,65 @@ func _check_ai_collisions() -> void:
 						ai.apply_boost()
 						_sparkle_at(child.position)
 						_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
+
+
+# ---------------------------------------------------------------------------
+# Car-to-car bump collisions
+# ---------------------------------------------------------------------------
+func _check_car_bumps(delta: float) -> void:
+	# Tick down cooldowns
+	var expired: Array = []
+	for key in bump_cooldowns.keys():
+		bump_cooldowns[key] -= delta
+		if bump_cooldowns[key] <= 0:
+			expired.append(key)
+	for key in expired:
+		bump_cooldowns.erase(key)
+
+	# Player vs AI
+	if not player.has_finished and player.crash_time <= 0:
+		for ai in ai_cars:
+			if ai.has_finished:
+				continue
+			var pair_key = "player_" + ai.car_label
+			if bump_cooldowns.has(pair_key):
+				continue
+			var dist = player.position.distance_to(ai.global_position)
+			if dist < BUMP_DIST:
+				player.apply_bump()
+				ai.apply_bump()
+				bump_cooldowns[pair_key] = BUMP_COOLDOWN
+				_flash_bump(player.position)
+
+	# AI vs AI
+	for i in range(ai_cars.size()):
+		if ai_cars[i].has_finished:
+			continue
+		for j in range(i + 1, ai_cars.size()):
+			if ai_cars[j].has_finished:
+				continue
+			var pair_key = ai_cars[i].car_label + "_" + ai_cars[j].car_label
+			if bump_cooldowns.has(pair_key):
+				continue
+			var dist = ai_cars[i].global_position.distance_to(ai_cars[j].global_position)
+			if dist < BUMP_DIST:
+				ai_cars[i].apply_bump()
+				ai_cars[j].apply_bump()
+				bump_cooldowns[pair_key] = BUMP_COOLDOWN
+
+
+func _flash_bump(pos: Vector2) -> void:
+	var lbl = Label.new()
+	lbl.text = "BUMP!"
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2, 1))
+	lbl.position = pos + Vector2(-30, -30)
+	lbl.z_index  = 20
+	add_child(lbl)
+	var tw = create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y - 40, 0.5)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(func(): lbl.queue_free())
 
 
 func _play_griddy() -> void:

@@ -19,6 +19,12 @@ var is_racing: bool = false
 var has_finished: bool = false
 var car_label: String = "AI"
 var car_color: Color = Color.CYAN
+var lane_offset: float = 0.0  # perpendicular offset from path center (pixels)
+
+# Collision penalty
+var bump_time: float = 0.0
+const BUMP_SLOW_DURATION = 1.5
+const BUMP_SPEED_MULT = 0.4
 
 # "Mind of their own" fields
 var noise_speed: float = 0.0
@@ -58,6 +64,10 @@ func _process(delta: float) -> void:
 	if not is_racing or has_finished:
 		return
 
+	# --- Bump penalty countdown ---
+	if bump_time > 0:
+		bump_time -= delta
+
 	# --- Option E: progressive speedup ---
 	race_timer += delta
 	speed_bonus = min(floor(race_timer / SPEEDUP_INTERVAL) * SPEEDUP_AMOUNT, SPEEDUP_CAP - BASE_SPEED)
@@ -78,7 +88,20 @@ func _process(delta: float) -> void:
 		var current_max = min(MAX_SPEED + speed_bonus, SPEEDUP_CAP)
 		speed = clamp(current_base + noise_speed, MIN_SPEED, current_max)
 
+	# Apply bump slowdown
+	if bump_time > 0:
+		speed *= BUMP_SPEED_MULT
+
 	progress += speed * delta
+
+	# Apply lane offset perpendicular to path direction
+	if lane_offset != 0.0 and get_parent() is Path2D:
+		var curve = (get_parent() as Path2D).curve
+		var offs = curve.get_closest_offset(position)
+		var tangent = (curve.sample_baked(min(offs + 5.0, curve.get_baked_length())) - curve.sample_baked(offs)).normalized()
+		var perp = Vector2(-tangent.y, tangent.x)
+		# PathFollow2D resets position each frame, so we offset via transform
+		position += perp * lane_offset
 
 	if progress_ratio >= 0.99:
 		_cross_finish()
@@ -87,6 +110,11 @@ func _process(delta: float) -> void:
 # --- Option D: called by race_manager when AI hits a star ---
 func apply_boost() -> void:
 	boost_time = BOOST_DURATION
+
+
+func apply_bump() -> void:
+	if bump_time <= 0:
+		bump_time = BUMP_SLOW_DURATION
 
 
 func _cross_finish() -> void:

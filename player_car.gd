@@ -7,10 +7,13 @@ const BRAKE       = 900.0
 const COAST       = 300.0
 const TURN_SPEED  = 2.8
 const FINISH_DIST = 120.0
+const BUMP_SLOW_DURATION = 1.5
+const BUMP_SPEED_MULT = 0.4
 
 var speed: float = 0.0
 var boost_time: float = 0.0
 var crash_time: float = 0.0
+var bump_time: float = 0.0
 var has_finished: bool = false
 var is_racing: bool = false
 var finish_position: Vector2 = Vector2.ZERO
@@ -27,6 +30,8 @@ func _process(delta: float) -> void:
 	if not is_racing or has_finished:
 		return
 
+	if bump_time > 0:
+		bump_time -= delta
 	if crash_time > 0:
 		crash_time -= delta
 		return
@@ -47,7 +52,8 @@ func _process(delta: float) -> void:
 	else:
 		speed = move_toward(speed, 0.0, COAST * delta)
 
-	position += Vector2.UP.rotated(rotation) * speed * delta
+	var effective_speed = speed * (BUMP_SPEED_MULT if bump_time > 0 else 1.0)
+	position += Vector2.UP.rotated(rotation) * effective_speed * delta
 	if speed > 0:
 		track_progress += speed * delta
 
@@ -57,6 +63,11 @@ func _process(delta: float) -> void:
 
 func apply_boost() -> void:
 	boost_time = 5.0
+
+
+func apply_bump() -> void:
+	if bump_time <= 0 and crash_time <= 0:
+		bump_time = BUMP_SLOW_DURATION
 
 
 func apply_crash() -> void:
