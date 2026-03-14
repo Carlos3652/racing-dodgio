@@ -18,6 +18,8 @@ const CURB_WHITE     = Color(0.941, 0.929, 0.878, 1)
 const CURB_RED       = Color(0.800, 0.133, 0.000, 1)
 const CURB_STRIPE_LEN   = 50.0
 const CURB_STRIPE_WIDTH = 24.0
+const GATE_NEON_COLOR   = Color(0.0, 0.9, 1.0, 0.90)
+const GATE_CORE_COLOR   = Color(1.0, 1.0, 1.0, 0.70)
 
 const AI_COLORS = [
 	Color(0.2,  0.5,  1.0),
@@ -68,6 +70,7 @@ var hud_place_suffix:  Label
 var hud_timer:         Label
 var hud_speed:         Label
 var hud_boost_status:  Label
+var hud_lap:           Label
 var hud_div3:          ColorRect
 var hud_place_up:      Label
 var hud_countdown:     Label
@@ -89,7 +92,7 @@ var _finish_banner_shown: bool = false
 var _player_finished: bool  = false
 var _player_finish_timer: float = 0.0
 const FORCE_FINISH_DELAY: float = 10.0
-const RACE_TIMEOUT: float = 120.0
+const RACE_TIMEOUT: float = 300.0
 
 # Race stats tracking (written to GameData at end)
 var _stat_stars: int = 0
@@ -167,8 +170,8 @@ func _build_road() -> void:
 	shoulder.width = SHOULDER_W
 	shoulder.default_color = SHOULDER_COLOR
 	shoulder.joint_mode = Line2D.LINE_JOINT_ROUND
-	shoulder.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	shoulder.end_cap_mode   = Line2D.LINE_CAP_ROUND
+	shoulder.begin_cap_mode = Line2D.LINE_CAP_NONE
+	shoulder.end_cap_mode   = Line2D.LINE_CAP_NONE
 	for p in TRACK_POINTS:
 		shoulder.add_point(p)
 
@@ -176,8 +179,8 @@ func _build_road() -> void:
 	road.width = ROAD_WIDTH
 	road.default_color = ROAD_COLOR
 	road.joint_mode = Line2D.LINE_JOINT_ROUND
-	road.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	road.end_cap_mode   = Line2D.LINE_CAP_ROUND
+	road.begin_cap_mode = Line2D.LINE_CAP_NONE
+	road.end_cap_mode   = Line2D.LINE_CAP_NONE
 	for p in TRACK_POINTS:
 		road.add_point(p)
 
@@ -196,8 +199,8 @@ func _build_road() -> void:
 	var start_dir = (TRACK_POINTS[1] - TRACK_POINTS[0]).normalized()
 	_add_start_gate(TRACK_POINTS[0], start_dir)
 
-	# Finish line with posts
-	_add_finish_checkered(TRACK_POINTS[TRACK_POINTS.size() - 1])
+	# Checkered finish line at start/finish point
+	_add_finish_checkered(TRACK_POINTS[0])
 
 	# Figure Eight crossover marker (by track name, not hardcoded index)
 	var idx_track = GameData.current_track_index
@@ -230,37 +233,106 @@ func _build_dashes(curve: Curve2D) -> void:
 func _build_curb_stripes(curve: Curve2D) -> void:
 	var total_len = curve.get_baked_length()
 	var offset    = (ROAD_WIDTH * 0.5) + 8.0
-	var pos       = 0.0
-	var is_white  = true
 
-	while pos < total_len:
-		var end_pos = min(pos + CURB_STRIPE_LEN, total_len)
-		var p1      = curve.sample_baked(pos)
-		var p2      = curve.sample_baked(end_pos)
-		var dir     = (p2 - p1).normalized()
-		var perp    = Vector2(-dir.y, dir.x)
-		var col     = CURB_WHITE if is_white else CURB_RED
+	# Phase-sync: fit an integer number of stripes so the loop closes exactly
+	var stripe_count = int(total_len / CURB_STRIPE_LEN)
+	if stripe_count < 1:
+		stripe_count = 1
+	var adj_len  = total_len / float(stripe_count)
 
-		# Left edge stripe
-		var left = Line2D.new()
-		left.width         = CURB_STRIPE_WIDTH
-		left.default_color = col
-		left.add_point(p1 - perp * offset)
-		left.add_point(p2 - perp * offset)
-		left.z_index = 1
-		add_child(left)
+	# Gate exclusion zone for neon gate curbs (Variant B)
+	var gate_half = 100.0
 
-		# Right edge stripe
-		var right = Line2D.new()
-		right.width         = CURB_STRIPE_WIDTH
-		right.default_color = col
-		right.add_point(p1 + perp * offset)
-		right.add_point(p2 + perp * offset)
-		right.z_index = 1
-		add_child(right)
+	var pos      = 0.0
+	var is_white = true
 
-		pos      += CURB_STRIPE_LEN
+	while pos < total_len - 0.1:
+		var end_pos = min(pos + adj_len, total_len)
+
+		# Skip stripes inside the start/finish gate zone
+		var near_start = pos < gate_half
+		var near_end   = end_pos > (total_len - gate_half)
+
+		if not near_start and not near_end:
+			var p1   = curve.sample_baked(pos)
+			var p2   = curve.sample_baked(end_pos)
+			var dir  = (p2 - p1).normalized()
+			var perp = Vector2(-dir.y, dir.x)
+			var col  = CURB_WHITE if is_white else CURB_RED
+
+			# Left edge stripe
+			var left = Line2D.new()
+			left.width         = CURB_STRIPE_WIDTH
+			left.default_color = col
+			left.begin_cap_mode = Line2D.LINE_CAP_NONE
+			left.end_cap_mode   = Line2D.LINE_CAP_NONE
+			left.add_point(p1 - perp * offset)
+			left.add_point(p2 - perp * offset)
+			left.z_index = 1
+			add_child(left)
+
+			# Right edge stripe
+			var right = Line2D.new()
+			right.width         = CURB_STRIPE_WIDTH
+			right.default_color = col
+			right.begin_cap_mode = Line2D.LINE_CAP_NONE
+			right.end_cap_mode   = Line2D.LINE_CAP_NONE
+			right.add_point(p1 + perp * offset)
+			right.add_point(p2 + perp * offset)
+			right.z_index = 1
+			add_child(right)
+
+		pos      += adj_len
 		is_white  = not is_white
+
+	# Neon gate curbs at the start/finish seam
+	_build_neon_gate_curbs(curve, total_len, gate_half)
+
+
+func _build_neon_gate_curbs(curve: Curve2D, total_len: float, gate_half: float) -> void:
+	var offset  = (ROAD_WIDTH * 0.5) + 8.0
+	var outer_w = (CURB_STRIPE_WIDTH + 6.0) * 0.5  # 15px half-width
+	var core_w  = 5.0
+
+	# Sample positions at gate boundaries and seam center
+	var p_before = curve.sample_baked(total_len - gate_half)
+	var p_seam   = curve.sample_baked(0.0)
+	var p_after  = curve.sample_baked(gate_half)
+
+	# Average direction through the gate
+	var dir_in  = (p_seam - p_before).normalized()
+	var dir_out = (p_after - p_seam).normalized()
+	var dir_avg = (dir_in + dir_out).normalized()
+	var perp    = Vector2(-dir_avg.y, dir_avg.x)
+
+	# Build neon band on each side of the road
+	for side in [-1.0, 1.0]:
+		var edge_offset = perp * offset * side
+		var width_vec   = perp * side
+
+		# Outer cyan neon quad
+		var outer = Polygon2D.new()
+		outer.polygon = PackedVector2Array([
+			p_before + edge_offset - width_vec * outer_w,
+			p_before + edge_offset + width_vec * outer_w,
+			p_after  + edge_offset + width_vec * outer_w,
+			p_after  + edge_offset - width_vec * outer_w,
+		])
+		outer.color   = GATE_NEON_COLOR
+		outer.z_index = 2
+		add_child(outer)
+
+		# Inner white core quad
+		var core = Polygon2D.new()
+		core.polygon = PackedVector2Array([
+			p_before + edge_offset - width_vec * core_w,
+			p_before + edge_offset + width_vec * core_w,
+			p_after  + edge_offset + width_vec * core_w,
+			p_after  + edge_offset - width_vec * core_w,
+		])
+		core.color   = GATE_CORE_COLOR
+		core.z_index = 3
+		add_child(core)
 
 
 func _build_lane_dividers(curve: Curve2D) -> void:
@@ -405,7 +477,7 @@ func _add_start_gate(pos: Vector2, dir: Vector2) -> void:
 
 	# "START" label — larger, centered above gate
 	var lbl = Label.new()
-	lbl.text = "START"
+	lbl.text = "START / FINISH"
 	lbl.add_theme_font_size_override("font_size", 42)
 	lbl.add_theme_color_override("font_color", Color(0.08, 0.90, 0.25, 1.0))
 	lbl.position = pos + dir * (-50.0) + perp * (-52.0)
@@ -414,9 +486,8 @@ func _add_start_gate(pos: Vector2, dir: Vector2) -> void:
 
 
 func _add_finish_checkered(pos: Vector2) -> void:
-	# Direction of road at finish (from prev waypoint to finish)
-	var prev = TRACK_POINTS[TRACK_POINTS.size() - 2]
-	var dir  = (pos - prev).normalized()
+	# Direction of road at start/finish (same as start gate direction)
+	var dir  = (TRACK_POINTS[1] - TRACK_POINTS[0]).normalized()
 	var perp = Vector2(-dir.y, dir.x)
 	var half = ROAD_WIDTH * 0.5 + 12.0
 
@@ -487,7 +558,7 @@ func _build_track_path() -> void:
 		curve.add_point(p)
 	track_path.curve = curve
 
-	finish_pos = TRACK_POINTS[TRACK_POINTS.size() - 1]
+	finish_pos = TRACK_POINTS[0]
 
 	# Compute start direction and perpendicular for lane offsets
 	var start_dir = (TRACK_POINTS[1] - TRACK_POINTS[0]).normalized()
@@ -519,7 +590,15 @@ func _build_track_path() -> void:
 	player.position = TRACK_POINTS[0] + start_perp * lane_offsets[player_lane_idx]
 	# Face the player in the direction of travel (car draws pointing UP = -Y)
 	player.rotation = start_dir.angle() + PI / 2.0
-	player.finish_position = finish_pos
+	# Set up finish line for player lap detection
+	var fl_perp = Vector2(-start_dir.y, start_dir.x)
+	var fl_half = ROAD_WIDTH * 0.6
+	player.finish_line_a = TRACK_POINTS[0] + fl_perp * (-fl_half)
+	player.finish_line_b = TRACK_POINTS[0] + fl_perp * fl_half
+	player.finish_line_dir = start_dir
+	player.total_laps = GameData.TOTAL_LAPS
+	player.min_progress_for_lap = track_path.curve.get_baked_length() * 0.7
+	player._prev_pos = player.position
 	player.finished.connect(_on_car_finished)
 	camera = $PlayerCar/Camera2D
 
@@ -541,6 +620,7 @@ func _build_track_path() -> void:
 		ai.progress     = 10.0  # slight offset so they're not at exact point 0
 		ai.lane_offset  = lane_offsets[ai_lane]
 		ai.scale        = CAR_SCALE
+		ai.total_laps = GameData.TOTAL_LAPS
 		# Apply personality archetype
 		if AI_PERSONALITIES.has(ai_roster[i].name):
 			ai.personality = AI_PERSONALITIES[ai_roster[i].name].duplicate()
@@ -594,6 +674,17 @@ func _setup_hud_refs() -> void:
 	hud_speed         = $HUD/StatPanel/StatVBox/SpeedLabel
 	hud_boost_status  = $HUD/StatPanel/StatVBox/BoostStatusLabel
 	hud_div3          = $HUD/StatPanel/StatVBox/Div3
+
+	# Create lap counter label dynamically
+	hud_lap = Label.new()
+	hud_lap.text = "LAP 1/%d" % GameData.TOTAL_LAPS
+	hud_lap.add_theme_font_size_override("font_size", 22)
+	hud_lap.add_theme_color_override("font_color", Color(0.9, 0.85, 1.0, 1))
+	hud_lap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Insert after SpeedLabel (index 3 in StatVBox: PositionRow, TimerLabel, SpeedLabel)
+	var stat_vbox = $HUD/StatPanel/StatVBox
+	stat_vbox.add_child(hud_lap)
+	stat_vbox.move_child(hud_lap, stat_vbox.get_child_count() - 1)
 	hud_place_up      = $HUD/PlaceUpLabel
 	hud_countdown     = $HUD/CountdownLabel
 	countdown_backing = $HUD/CountdownBacking
@@ -720,6 +811,7 @@ func _update_hud(delta: float) -> void:
 		mins += 1
 	hud_timer.text = "%d:%05.2f" % [mins, secs]
 	hud_speed.text = "%d km/h" % player.get_speed_kmh()
+	hud_lap.text = "LAP %d/%d" % [min(player.current_lap + 1, GameData.TOTAL_LAPS), GameData.TOTAL_LAPS]
 
 	# Boost status label — only visible during boost, stun, or bump (hidden when idle)
 	if player.bump_time > 0 and player.crash_time <= 0:
@@ -770,11 +862,15 @@ func _get_player_place() -> int:
 			if GameData.finish_order[i].name == "You":
 				return i + 1
 		return 1
-	var player_prog = player.track_progress
+	var curve_len = track_path.curve.get_baked_length()
+	var player_total = float(player.current_lap) * curve_len + player.track_progress
 	var ahead = 0
 	for ai in ai_cars:
-		var ai_prog = INF if ai.has_finished else ai.progress
-		if ai_prog > player_prog:
+		if ai.has_finished:
+			ahead += 1
+			continue
+		var ai_total = ai.get_total_progress()
+		if ai_total > player_total:
 			ahead += 1
 	return ahead + 1
 
@@ -1035,14 +1131,15 @@ func _check_force_finish(delta: float) -> void:
 func _force_finish_remaining() -> void:
 	if _scene_changing:
 		return
-	# Collect unfinished cars with their progress, sort by progress descending
-	# so force-finish positions reflect actual race standing.
+	# Collect unfinished cars with lap-aware total progress, sort descending
+	var curve_len = track_path.curve.get_baked_length()
 	var unfinished: Array = []
 	for ai in ai_cars:
 		if not ai.has_finished:
-			unfinished.append({node = ai, name = ai.car_label, prog = ai.progress})
+			unfinished.append({node = ai, name = ai.car_label, prog = ai.get_total_progress()})
 	if not player.has_finished:
-		unfinished.append({node = player, name = "You", prog = player.track_progress})
+		var player_total = float(player.current_lap) * curve_len + player.track_progress
+		unfinished.append({node = player, name = "You", prog = player_total})
 
 	unfinished.sort_custom(func(a, b): return a.prog > b.prog)
 
@@ -1063,11 +1160,12 @@ func _track_race_stats() -> void:
 	if player.boost_time > 0:
 		_stat_boost_frames += 1
 
-	# Track lead changes — who is in 1st place right now?
+	# Track lead changes — who is in 1st place right now? (lap-aware)
+	var curve_len = track_path.curve.get_baked_length()
 	var leader = "You"
-	var best_prog = player.track_progress
+	var best_prog = float(player.current_lap) * curve_len + player.track_progress
 	for ai in ai_cars:
-		var ai_prog = INF if ai.has_finished else ai.progress
+		var ai_prog = INF if ai.has_finished else ai.get_total_progress()
 		if ai_prog > best_prog:
 			best_prog = ai_prog
 			leader = ai.car_label
@@ -1161,9 +1259,9 @@ func _show_intro() -> void:
 	if GameData.circuit_mode:
 		var track_name = GameData.TRACKS[GameData.current_track_index].name
 		var race_num = GameData.circuit_race + 1
-		intro_card.text = "RACE %d/5 — %s" % [race_num, track_name]
+		intro_card.text = "RACE %d/5 — %s — %d LAPS" % [race_num, track_name, GameData.TOTAL_LAPS]
 	else:
-		intro_card.text = GameData.TRACKS[GameData.current_track_index].name
+		intro_card.text = "%s — %d LAPS" % [GameData.TRACKS[GameData.current_track_index].name, GameData.TOTAL_LAPS]
 	intro_card.visible    = true
 	intro_card.modulate.a = 0.0
 	var tw = create_tween()

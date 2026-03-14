@@ -6,7 +6,6 @@ const ACCEL       = 600.0
 const BRAKE       = 900.0
 const COAST       = 300.0
 const TURN_SPEED  = 2.8
-const FINISH_DIST = 220.0  # must be > ROAD_WIDTH * 0.55 (currently 209px)
 const BUMP_SLOW_DURATION = 1.5
 const BUMP_SPEED_MULT = 0.4
 var STUN_DURATION: float = 2.0
@@ -18,8 +17,18 @@ var crash_time: float = 0.0
 var bump_time: float = 0.0
 var has_finished: bool = false
 var is_racing: bool = false
-var finish_position: Vector2 = Vector2.ZERO
-var track_progress: float = 0.0  # cumulative forward distance — used for place calc
+var track_progress: float = 0.0  # curve offset — used for place calc
+
+# Lap tracking
+var current_lap: int = 0
+var total_laps: int = 3
+var finish_line_a: Vector2 = Vector2.ZERO
+var finish_line_b: Vector2 = Vector2.ZERO
+var finish_line_dir: Vector2 = Vector2.ZERO
+var min_progress_for_lap: float = 0.0
+var _progress_since_last_lap: float = 0.0
+var _prev_pos: Vector2 = Vector2.ZERO
+var _lap_cooldown: float = 1.0  # start at 1.0 to prevent false trigger at spawn
 
 signal finished(car_name: String)
 
@@ -59,11 +68,22 @@ func _process(delta: float) -> void:
 
 	var effective_speed = speed * (BUMP_SPEED_MULT if bump_time > 0 else 1.0)
 	position += Vector2.UP.rotated(rotation) * effective_speed * delta
-	if speed > 0:
-		track_progress += speed * delta
 
-	if finish_position != Vector2.ZERO and track_progress >= 500.0 and position.distance_to(finish_position) < FINISH_DIST:
-		_cross_finish()
+	# Lap detection
+	if _lap_cooldown > 0:
+		_lap_cooldown -= delta
+	var moved = position.distance_to(_prev_pos) if _prev_pos != Vector2.ZERO else 0.0
+	_progress_since_last_lap += moved
+	if finish_line_a != Vector2.ZERO and _lap_cooldown <= 0:
+		if _segments_intersect(_prev_pos, position, finish_line_a, finish_line_b):
+			var cross_dir = (position - _prev_pos).normalized()
+			if cross_dir.dot(finish_line_dir) > 0 and _progress_since_last_lap >= min_progress_for_lap:
+				current_lap += 1
+				_progress_since_last_lap = 0.0
+				_lap_cooldown = 2.0
+				if current_lap >= total_laps:
+					_cross_finish()
+	_prev_pos = position
 
 
 func apply_boost() -> void:
@@ -89,6 +109,17 @@ func apply_crash() -> void:
 func get_speed_kmh() -> int:
 	# 0.3 multiplier → 105 km/h at MAX_SPEED, 150 at boost — feels like a real race
 	return int(abs(speed) * 0.3)
+
+
+static func _segments_intersect(p1: Vector2, p2: Vector2, p3: Vector2, p4: Vector2) -> bool:
+	var d1 = p2 - p1
+	var d2 = p4 - p3
+	var denom = d1.x * d2.y - d1.y * d2.x
+	if abs(denom) < 0.001:
+		return false
+	var t = ((p3.x - p1.x) * d2.y - (p3.y - p1.y) * d2.x) / denom
+	var u = ((p3.x - p1.x) * d1.y - (p3.y - p1.y) * d1.x) / denom
+	return t >= 0.0 and t <= 1.0 and u >= 0.0 and u <= 1.0
 
 
 func _cross_finish() -> void:

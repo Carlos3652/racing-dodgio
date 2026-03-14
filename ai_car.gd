@@ -22,6 +22,11 @@ var car_label: String = "AI"
 var car_color: Color = Color.CYAN
 var lane_offset: float = 0.0  # perpendicular offset from path center (pixels)
 
+# Lap tracking
+var current_lap: int = 0
+var total_laps: int = 3
+var _prev_progress_ratio: float = 0.0
+
 # Collision penalty
 var bump_time: float = 0.0
 var BUMP_SLOW_DURATION: float = 1.5
@@ -50,7 +55,7 @@ signal finished(car_name: String)
 const _VisScene = preload("res://car_visual.gd")
 
 func _ready() -> void:
-	loop = false
+	loop = true
 	rotates = true
 
 	# Apply difficulty settings
@@ -134,17 +139,22 @@ func _process(delta: float) -> void:
 
 	progress += speed * delta
 
-	# Apply lane offset perpendicular to path direction
-	# Use progress (already maintained by PathFollow2D) instead of get_closest_offset for performance
+	# Apply lane offset perpendicular to path direction (loop-safe with fmod)
 	if lane_offset != 0.0 and get_parent() is Path2D:
 		var curve = (get_parent() as Path2D).curve
-		var clamped = clamp(progress, 0.0, curve.get_baked_length())
-		var tangent = (curve.sample_baked(min(clamped + 5.0, curve.get_baked_length())) - curve.sample_baked(clamped)).normalized()
+		var curve_len = curve.get_baked_length()
+		var sample_pos = fmod(progress, curve_len)
+		var sample_ahead = fmod(progress + 5.0, curve_len)
+		var tangent = (curve.sample_baked(sample_ahead) - curve.sample_baked(sample_pos)).normalized()
 		var perp = Vector2(-tangent.y, tangent.x)
 		position += perp * lane_offset
 
-	if progress_ratio >= 0.99 and progress >= 500.0:
-		_cross_finish()
+	# Detect lap completion: ratio wraps from >0.8 to <0.2
+	if _prev_progress_ratio > 0.8 and progress_ratio < 0.2:
+		current_lap += 1
+		if current_lap >= total_laps:
+			_cross_finish()
+	_prev_progress_ratio = progress_ratio
 
 
 # --- Option D: called by race_manager when AI hits a star ---
@@ -155,6 +165,13 @@ func apply_boost() -> void:
 func apply_bump() -> void:
 	if bump_time <= 0:
 		bump_time = BUMP_SLOW_DURATION
+
+
+func get_total_progress() -> float:
+	var curve_len = 0.0
+	if get_parent() is Path2D:
+		curve_len = (get_parent() as Path2D).curve.get_baked_length()
+	return float(current_lap) * curve_len + fmod(progress, max(curve_len, 1.0))
 
 
 func _cross_finish() -> void:
