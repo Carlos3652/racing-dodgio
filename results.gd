@@ -15,7 +15,7 @@ const COL_CYAN       = Color(0.3, 0.95, 1.0, 1)
 const COL_STAT_LABEL = Color(0.65, 0.60, 0.85, 1)
 const COL_STAT_VAL   = Color(1.0, 1.0, 1.0, 1)
 const COL_TRACK_LINE = Color(0.35, 0.35, 0.50, 0.60)
-const TRACK_SNAP_SIZE = Vector2(200, 200)
+const TRACK_SNAP_SIZE = Vector2(160, 140)
 const TRACK_SNAP_PAD  = 16.0
 
 # ── Cinematic state machine ──────────────────────────────────────────────

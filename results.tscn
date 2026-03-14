@@ -39,10 +39,12 @@ theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
 [node name="ContentVBox" type="VBoxContainer" parent="."]
 anchor_left = 0.5
 anchor_right = 0.5
+anchor_bottom = 1.0
 offset_left = -450.0
 offset_top = 118.0
 offset_right = 450.0
-offset_bottom = 570.0
+offset_bottom = -90.0
+clip_contents = true
 theme_override_constants/separation = 12
 
 [node name="ButtonRow" type="HBoxContainer" parent="."]

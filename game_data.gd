@@ -11,6 +11,7 @@ var player_car_type: String = "player"  # visual style key
 var player_max_speed: float = 350.0
 var player_stun_duration: float = 2.0
 var player_boost_duration: float = 5.0
+var player_turn_speed: float = 2.8
 
 # Difficulty — set by main_menu, read by ai_car and race_manager
 var difficulty: String = "normal"

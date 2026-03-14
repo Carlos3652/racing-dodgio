@@ -5,7 +5,7 @@ const BOOST_SPEED = 500.0
 const ACCEL       = 600.0
 const BRAKE       = 900.0
 const COAST       = 300.0
-const TURN_SPEED  = 2.8
+var TURN_SPEED: float = 2.8
 const BUMP_SLOW_DURATION = 1.5
 const BUMP_SPEED_MULT = 0.4
 var STUN_DURATION: float = 2.0
@@ -38,6 +38,7 @@ func _ready() -> void:
 	MAX_SPEED      = GameData.player_max_speed
 	STUN_DURATION  = GameData.player_stun_duration
 	BOOST_DURATION = GameData.player_boost_duration
+	TURN_SPEED     = GameData.player_turn_speed
 
 
 func _process(delta: float) -> void:
@@ -103,6 +104,7 @@ func apply_crash() -> void:
 	if crash_time > 0:
 		return
 	speed = 0.0
+	boost_time = 0.0
 	crash_time = STUN_DURATION
 
 

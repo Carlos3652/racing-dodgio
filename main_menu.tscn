@@ -78,7 +78,7 @@ alignment = 1
 
 [node name="StyleLabel" type="Label" parent="VBox/StatsBox/StyleRow"]
 custom_minimum_size = Vector2(70, 0)
-text = "STYLE"
+text = "HANDLING"
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.533, 0.533, 0.667, 1)
 

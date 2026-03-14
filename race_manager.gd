@@ -230,9 +230,19 @@ func _build_dashes(curve: Curve2D) -> void:
 		drawing = not drawing
 
 
+func _sample_looped(curve: Curve2D, t: float, total: float) -> Vector2:
+	return curve.sample_baked(fposmod(t, total))
+
+
+func _curve_normal(curve: Curve2D, t: float, total: float, delta: float = 5.0) -> Vector2:
+	var tan_vec = (_sample_looped(curve, t + delta, total) - _sample_looped(curve, t - delta, total)).normalized()
+	return Vector2(-tan_vec.y, tan_vec.x)
+
+
 func _build_curb_stripes(curve: Curve2D) -> void:
 	var total_len = curve.get_baked_length()
-	var offset    = (ROAD_WIDTH * 0.5) + 8.0
+	# Offset curb center so inner edge sits flush with road edge
+	var offset    = (ROAD_WIDTH * 0.5) + (CURB_STRIPE_WIDTH * 0.5)
 
 	# Phase-sync: fit an integer number of stripes so the loop closes exactly
 	var stripe_count = int(total_len / CURB_STRIPE_LEN)
@@ -254,32 +264,32 @@ func _build_curb_stripes(curve: Curve2D) -> void:
 		var near_end   = end_pos > (total_len - gate_half)
 
 		if not near_start and not near_end:
-			var p1   = curve.sample_baked(pos)
-			var p2   = curve.sample_baked(end_pos)
-			var dir  = (p2 - p1).normalized()
-			var perp = Vector2(-dir.y, dir.x)
 			var col  = CURB_WHITE if is_white else CURB_RED
 
-			# Left edge stripe
+			# Subdivide stripe into multiple points so it follows the curve on corners
+			var sub_count = 4  # 4 sub-segments per stripe = 5 sample points
 			var left = Line2D.new()
 			left.width         = CURB_STRIPE_WIDTH
 			left.default_color = col
 			left.begin_cap_mode = Line2D.LINE_CAP_NONE
 			left.end_cap_mode   = Line2D.LINE_CAP_NONE
-			left.add_point(p1 - perp * offset)
-			left.add_point(p2 - perp * offset)
 			left.z_index = 1
-			add_child(left)
 
-			# Right edge stripe
 			var right = Line2D.new()
 			right.width         = CURB_STRIPE_WIDTH
 			right.default_color = col
 			right.begin_cap_mode = Line2D.LINE_CAP_NONE
 			right.end_cap_mode   = Line2D.LINE_CAP_NONE
-			right.add_point(p1 + perp * offset)
-			right.add_point(p2 + perp * offset)
 			right.z_index = 1
+
+			for s in range(sub_count + 1):
+				var t = pos + (end_pos - pos) * (float(s) / float(sub_count))
+				var pt = _sample_looped(curve, t, total_len)
+				var n  = _curve_normal(curve, t, total_len)
+				left.add_point(pt - n * offset)
+				right.add_point(pt + n * offset)
+
+			add_child(left)
 			add_child(right)
 
 		pos      += adj_len
@@ -290,33 +300,32 @@ func _build_curb_stripes(curve: Curve2D) -> void:
 
 
 func _build_neon_gate_curbs(curve: Curve2D, total_len: float, gate_half: float) -> void:
-	var offset  = (ROAD_WIDTH * 0.5) + 8.0
+	var offset  = (ROAD_WIDTH * 0.5) + (CURB_STRIPE_WIDTH * 0.5)
 	var outer_w = (CURB_STRIPE_WIDTH + 6.0) * 0.5  # 15px half-width
 	var core_w  = 5.0
 
-	# Sample positions at gate boundaries and seam center
+	# Sample positions at gate boundaries
 	var p_before = curve.sample_baked(total_len - gate_half)
-	var p_seam   = curve.sample_baked(0.0)
 	var p_after  = curve.sample_baked(gate_half)
 
-	# Average direction through the gate
-	var dir_in  = (p_seam - p_before).normalized()
-	var dir_out = (p_after - p_seam).normalized()
-	var dir_avg = (dir_in + dir_out).normalized()
-	var perp    = Vector2(-dir_avg.y, dir_avg.x)
+	# Per-endpoint normals so the gate follows the curve on banked starts
+	var perp_before = _curve_normal(curve, total_len - gate_half, total_len)
+	var perp_after  = _curve_normal(curve, gate_half, total_len)
 
 	# Build neon band on each side of the road
 	for side in [-1.0, 1.0]:
-		var edge_offset = perp * offset * side
-		var width_vec   = perp * side
+		var off_before = perp_before * offset * side
+		var wv_before  = perp_before * side
+		var off_after  = perp_after  * offset * side
+		var wv_after   = perp_after  * side
 
 		# Outer cyan neon quad
 		var outer = Polygon2D.new()
 		outer.polygon = PackedVector2Array([
-			p_before + edge_offset - width_vec * outer_w,
-			p_before + edge_offset + width_vec * outer_w,
-			p_after  + edge_offset + width_vec * outer_w,
-			p_after  + edge_offset - width_vec * outer_w,
+			p_before + off_before - wv_before * outer_w,
+			p_before + off_before + wv_before * outer_w,
+			p_after  + off_after  + wv_after  * outer_w,
+			p_after  + off_after  - wv_after  * outer_w,
 		])
 		outer.color   = GATE_NEON_COLOR
 		outer.z_index = 2
@@ -325,10 +334,10 @@ func _build_neon_gate_curbs(curve: Curve2D, total_len: float, gate_half: float) 
 		# Inner white core quad
 		var core = Polygon2D.new()
 		core.polygon = PackedVector2Array([
-			p_before + edge_offset - width_vec * core_w,
-			p_before + edge_offset + width_vec * core_w,
-			p_after  + edge_offset + width_vec * core_w,
-			p_after  + edge_offset - width_vec * core_w,
+			p_before + off_before - wv_before * core_w,
+			p_before + off_before + wv_before * core_w,
+			p_after  + off_after  + wv_after  * core_w,
+			p_after  + off_after  - wv_after  * core_w,
 		])
 		core.color   = GATE_CORE_COLOR
 		core.z_index = 3
@@ -573,21 +582,30 @@ func _build_track_path() -> void:
 		ai_roster.append({name = AI_NAMES[i], color = AI_COLORS[i]})
 	var spawn_count = min(ai_roster.size(), 4)
 
-	# Lane offsets: spread all cars evenly across the road width
-	# total_slots = 1 (player) + spawn_count (AI)
+	# F1-style staggered grid: 2 columns, rows spaced behind the start line
+	# Grid positions: row 0 = pole, row 1 = P2/P3, row 2 = P4/P5
 	var total_slots = 1 + spawn_count
-	var lane_offsets: Array = []
-	for i in range(total_slots):
-		# Evenly spaced from -half_road to +half_road
-		var t = (float(i) / float(total_slots - 1)) - 0.5 if total_slots > 1 else 0.0
-		lane_offsets.append(t * ROAD_WIDTH * 0.7)  # 70% of road to leave margin
+	var row_spacing = 80.0   # distance between grid rows along the track
+	var col_offset  = ROAD_WIDTH * 0.20  # lateral offset from center (left/right)
 
-	# Player gets the middle lane (or first if odd)
-	var player_lane_idx = total_slots / 2
+	# Build grid slots: [{row, side}] — side: -1 = left, +1 = right
+	# Row 0: center (pole). Row 1+: alternating left/right
+	var grid_slots: Array = []
+	grid_slots.append({row = 0, side = 0.0})       # P1 — pole position (center)
+	for i in range(1, total_slots):
+		var row = (i + 1) / 2  # P2/P3 = row 1, P4/P5 = row 2
+		var side = -1.0 if (i % 2 == 1) else 1.0
+		grid_slots.append({row = row, side = side})
+
+	# Player starts in P3 (middle of the pack), randomize in future if desired
+	var player_grid = total_slots / 2
 
 	player = $PlayerCar
 	player.scale = CAR_SCALE
-	player.position = TRACK_POINTS[0] + start_perp * lane_offsets[player_lane_idx]
+	var p_slot = grid_slots[player_grid]
+	var p_back = start_dir * (-row_spacing * p_slot.row)
+	var p_side = start_perp * (col_offset * p_slot.side)
+	player.position = TRACK_POINTS[0] + p_back + p_side
 	# Face the player in the direction of travel (car draws pointing UP = -Y)
 	player.rotation = start_dir.angle() + PI / 2.0
 	# Set up finish line for player lap detection
@@ -609,16 +627,18 @@ func _build_track_path() -> void:
 	pvis.is_player_car = true
 	player.add_child(pvis)
 
-	# Spawn AI cars in remaining lanes
-	var ai_lane = 0
+	# Spawn AI cars in remaining grid slots
+	var ai_slot_idx = 0
 	for i in range(spawn_count):
-		if ai_lane == player_lane_idx:
-			ai_lane += 1
+		if ai_slot_idx == player_grid:
+			ai_slot_idx += 1
+		var slot = grid_slots[ai_slot_idx]
 		var ai = preload("res://ai_car.gd").new()
 		ai.car_label    = ai_roster[i].name
 		ai.car_color    = ai_roster[i].color
-		ai.progress     = 10.0  # slight offset so they're not at exact point 0
-		ai.lane_offset  = lane_offsets[ai_lane]
+		# Stagger start progress along track based on grid row (further back = less progress)
+		ai.progress     = max(10.0 - slot.row * row_spacing, 0.0)
+		ai.lane_offset  = col_offset * slot.side
 		ai.scale        = CAR_SCALE
 		ai.total_laps = GameData.TOTAL_LAPS
 		# Apply personality archetype
@@ -627,7 +647,7 @@ func _build_track_path() -> void:
 		ai.finished.connect(_on_car_finished)
 		track_path.add_child(ai)
 		ai_cars.append(ai)
-		ai_lane += 1
+		ai_slot_idx += 1
 
 	total_cars = 1 + ai_cars.size()  # player + AI
 
@@ -645,8 +665,17 @@ func _place_obstacles() -> void:
 	var star_offs = track_data.get("star_offsets", COOKIE_OFFSETS)
 	var jeep_offs = track_data.get("jeep_offsets", JEEP_OFFSETS)
 
+	var curve = track_path.curve
+	var curve_len = curve.get_baked_length()
+	var lane_range = ROAD_WIDTH * 0.35  # max lateral offset from center
+
 	for r in star_offs:
-		var pos  = track_path.curve.sample_baked(track_path.curve.get_baked_length() * r)
+		var dist = curve_len * r
+		var pos  = curve.sample_baked(dist)
+		# Randomize lateral position across the road
+		var lateral = randf_range(-lane_range, lane_range)
+		var normal  = _curve_normal(curve, dist, curve_len)
+		pos += normal * lateral
 		var star = _StarScene.new()
 		star.position = pos
 		star.scale    = Vector2(1.8, 1.8)
@@ -655,7 +684,12 @@ func _place_obstacles() -> void:
 		obstacles.append(star)
 
 	for r in jeep_offs:
-		var pos    = track_path.curve.sample_baked(track_path.curve.get_baked_length() * r)
+		var dist   = curve_len * r
+		var pos    = curve.sample_baked(dist)
+		# Randomize lateral position — avoid same lane as stars
+		var lateral = randf_range(-lane_range, lane_range)
+		var normal  = _curve_normal(curve, dist, curve_len)
+		pos += normal * lateral
 		var hazard = _HazardScene.new()
 		hazard.position = pos
 		hazard.scale    = Vector2(1.6, 1.6)

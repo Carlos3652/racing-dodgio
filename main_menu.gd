@@ -13,6 +13,8 @@ const COL_DIM_BORDER = Color(0.25, 0.22, 0.40, 1)
 # Luck stat → stun_duration: 2→2.2, 3→2.0, 4→1.8, 5→1.7, 6→1.5, 7→1.4
 const SPEED_MAP = {4: 310.0, 5: 325.0, 6: 340.0, 7: 355.0, 8: 370.0}
 const LUCK_MAP  = {2: 2.2, 3: 2.0, 4: 1.8, 5: 1.7, 6: 1.5, 7: 1.4}
+# Style stat → turn_speed (handling): higher style = tighter turning
+const STYLE_MAP = {4: 2.4, 5: 2.6, 6: 2.8, 7: 3.0, 8: 3.2}
 
 const CAR_OPTIONS = [
 	{name = "RED CAR",    type = "player", color = Color(1.0, 0.133, 0.133, 1), speed = 6, style = 5, luck = 4, boost_duration = 5.0},
@@ -285,6 +287,7 @@ func _apply_car_stats(car: Dictionary) -> void:
 	GameData.player_max_speed      = SPEED_MAP.get(car.speed, 340.0)
 	GameData.player_stun_duration  = LUCK_MAP.get(car.luck, 2.0)
 	GameData.player_boost_duration = car.get("boost_duration", 5.0)
+	GameData.player_turn_speed     = STYLE_MAP.get(car.style, 2.8)
 	GameData.difficulty            = DIFFICULTIES[selected_difficulty].to_lower()
 
 
