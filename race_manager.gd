@@ -585,8 +585,8 @@ func _build_track_path() -> void:
 	# F1-style staggered grid: 2 columns, rows spaced behind the start line
 	# Grid positions: row 0 = pole, row 1 = P2/P3, row 2 = P4/P5
 	var total_slots = 1 + spawn_count
-	var row_spacing = 80.0   # distance between grid rows along the track
-	var col_offset  = ROAD_WIDTH * 0.20  # lateral offset from center (left/right)
+	var row_spacing = 110.0  # distance between grid rows along the track (~2 car lengths)
+	var col_offset  = ROAD_WIDTH * 0.27  # lateral offset from center (~204px apart)
 
 	# Build grid slots: [{row, side}] — side: -1 = left, +1 = right
 	# Row 0: center (pole). Row 1+: alternating left/right
