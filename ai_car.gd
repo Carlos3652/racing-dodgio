@@ -15,6 +15,11 @@ const SPEEDUP_INTERVAL = 10.0
 const SPEEDUP_AMOUNT   = 15.0
 var SPEEDUP_CAP: float  = 380.0
 
+# --- Rubber-band catch-up / pullback ---
+@export var CATCHUP_BONUS: float = 25.0
+@export var PULLBACK_PENALTY: float = 15.0
+var player_ref: Node2D = null
+
 var speed: float = BASE_SPEED
 var is_racing: bool = false
 var has_finished: bool = false
@@ -130,6 +135,21 @@ func _process(delta: float) -> void:
 		speed = BOOST_SPEED
 	else:
 		var current_base = BASE_SPEED + speed_bonus
+
+		# --- Rubber-band catch-up / pullback ---
+		if player_ref != null and get_parent() is Path2D:
+			var curve_len := (get_parent() as Path2D).curve.get_baked_length()
+			var total_track := curve_len * float(total_laps)
+			if total_track > 0.0:
+				var player_total := float(player_ref.current_lap) * curve_len + player_ref.track_progress
+				var ai_total := get_total_progress()
+				var gap := player_total - ai_total
+				var threshold := total_track * 0.10
+				if gap > threshold:
+					current_base += CATCHUP_BONUS
+				elif gap < -threshold:
+					current_base -= PULLBACK_PENALTY
+
 		var current_max = min(MAX_SPEED + speed_bonus, SPEEDUP_CAP)
 		speed = clamp(current_base + noise_speed, MIN_SPEED, current_max)
 
