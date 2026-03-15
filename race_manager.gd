@@ -1346,9 +1346,18 @@ func _do_camera_shake() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Star sparkle on cookie collect
+# Star sparkle on cookie collect – particle burst + floating label
 # ---------------------------------------------------------------------------
+const _CollectBurst = preload("res://collect_burst.gd")
+
 func _sparkle_at(pos: Vector2) -> void:
+	# Particle burst effect
+	var burst = Node2D.new()
+	burst.set_script(_CollectBurst)
+	burst.position = pos
+	add_child(burst)
+
+	# Floating "BOOST!" label
 	var lbl = Label.new()
 	lbl.text = "* BOOST! *"
 	lbl.add_theme_font_size_override("font_size", 26)
