@@ -19,6 +19,11 @@ var has_finished: bool = false
 var is_racing: bool = false
 var track_progress: float = 0.0  # curve offset — used for place calc
 
+# Drift boost
+var drift_time: float = 0.0
+var is_drifting: bool = false
+var _prev_rotation: float = 0.0
+
 # Lap tracking
 var current_lap: int = 0
 var total_laps: int = 3
@@ -55,6 +60,18 @@ func _process(delta: float) -> void:
 		rotation -= TURN_SPEED * delta
 	if Input.is_action_pressed("ui_right"):
 		rotation += TURN_SPEED * delta
+
+	# Drift boost mechanic
+	var rotation_delta = rotation - _prev_rotation
+	_prev_rotation = rotation
+	if Input.is_action_pressed("drift") and abs(rotation_delta) > 0.04:
+		is_drifting = true
+		drift_time += delta
+	else:
+		if is_drifting and drift_time >= 1.5:
+			apply_close_call_boost(1.5)
+		is_drifting = false
+		drift_time = 0.0
 
 	var top = BOOST_SPEED if boost_time > 0 else MAX_SPEED
 	if boost_time > 0:
@@ -105,6 +122,8 @@ func apply_crash() -> void:
 		return
 	speed = 0.0
 	boost_time = 0.0
+	drift_time = 0.0
+	is_drifting = false
 	crash_time = STUN_DURATION
 
 

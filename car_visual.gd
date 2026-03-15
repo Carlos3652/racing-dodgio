@@ -33,6 +33,16 @@ func _draw() -> void:
 			draw_arc(Vector2(0, 40), 10, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.65), true)
 			draw_arc(Vector2(0, 40), 17, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.22), true)
 
+		# Drift smoke — gray puffs at rear wheels while drifting
+		if parent and "is_drifting" in parent and parent.is_drifting:
+			var smoke_alpha = min(parent.drift_time * 0.5, 0.6)
+			var smoke_col = Color(0.7, 0.7, 0.7, smoke_alpha)
+			var smoke_col_outer = Color(0.6, 0.6, 0.6, smoke_alpha * 0.4)
+			draw_arc(Vector2(-18, 38), 8, 0, TAU, 10, smoke_col, true)
+			draw_arc(Vector2( 18, 38), 8, 0, TAU, 10, smoke_col, true)
+			draw_arc(Vector2(-22, 42), 12, 0, TAU, 10, smoke_col_outer, true)
+			draw_arc(Vector2( 22, 42), 12, 0, TAU, 10, smoke_col_outer, true)
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 
