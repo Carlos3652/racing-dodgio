@@ -26,10 +26,25 @@ func _draw() -> void:
 		"orange": _draw_orange()
 		"purple": _draw_purple()
 
-	# Boost exhaust glow — works for any car type when driven by player
+	# Boost speed trail + exhaust glow — works for any car type when driven by player
 	if is_player_car:
 		var parent = get_parent()
 		if parent and "boost_time" in parent and parent.boost_time > 0:
+			# Speed trail ghost copies behind the car (positive Y = behind in local space)
+			var ghost_offsets := [20.0, 40.0, 60.0]
+			var ghost_alphas  := [0.35, 0.20, 0.08]
+			for i in range(ghost_offsets.size()):
+				var off_y: float = ghost_offsets[i]
+				var a: float     = ghost_alphas[i]
+				draw_set_transform(Vector2(0, off_y))
+				# Ghost body rectangle
+				draw_rect(Rect2(-22, -36, 44, 72), Color(car_color.r, car_color.g, car_color.b, a))
+				# Ghost windshield
+				draw_rect(Rect2(-14, -28, 28, 16), Color(_WINDSHIELD.r, _WINDSHIELD.g, _WINDSHIELD.b, a * 0.6))
+			# Reset transform for subsequent draws
+			draw_set_transform(Vector2.ZERO)
+
+			# Exhaust glow
 			draw_arc(Vector2(0, 40), 10, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.65), true)
 			draw_arc(Vector2(0, 40), 17, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.22), true)
 
