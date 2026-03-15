@@ -113,6 +113,10 @@ var finish_banner: Label
 var intro_card:    Label
 var fade_overlay:  ColorRect
 var camera:        Camera2D
+var crash_sfx:     AudioStreamPlayer
+var bump_sfx:      AudioStreamPlayer
+var cd_beep_sfx:   AudioStreamPlayer
+var cd_go_sfx:     AudioStreamPlayer
 var minimap:       Control
 
 # StyleBoxFlat instances for dynamic bar coloring
@@ -733,6 +737,10 @@ func _setup_hud_refs() -> void:
 	esc_dialog        = $HUD/EscDialog
 	esc_yes_btn       = $HUD/EscDialog/EscPanel/EscVBox/EscBtnRow/EscYesBtn
 	esc_no_btn        = $HUD/EscDialog/EscPanel/EscVBox/EscBtnRow/EscNoBtn
+	crash_sfx         = $CrashSFX
+	bump_sfx          = $BumpSFX
+	cd_beep_sfx       = $CountdownBeepSFX
+	cd_go_sfx         = $CountdownGoSFX
 
 	# Apply bar background styles
 	boost_bar.add_theme_stylebox_override("background", _bar_bg_style)
@@ -937,9 +945,11 @@ func _process(delta: float) -> void:
 				if d != last_digit_shown:
 					last_digit_shown = d
 					_show_countdown_digit(str(d), Color(1, 0.9, 0.1))
+					cd_beep_sfx.play()
 			elif last_digit_shown != 0:
 				last_digit_shown = 0
 				_show_countdown_digit("GO!", Color(0.2, 1.0, 0.3), 108)
+				cd_go_sfx.play()
 			if countdown_left <= -0.6:
 				_hide_countdown()
 				state = State.RACING
@@ -984,6 +994,7 @@ func _check_player_collisions() -> void:
 				if dist < 65 and player.crash_time <= 0:
 					player.apply_crash()
 					_flash_screen()
+					crash_sfx.play()
 					_hide_pickup(child, jeep_timers, JEEP_RESPAWN_SEC)
 					_stat_stuns += 1
 				elif dist >= 65 and dist < 90 and player.crash_time <= 0 and _close_call_cooldown <= 0:
@@ -1061,6 +1072,7 @@ func _check_car_bumps(delta: float) -> void:
 
 
 func _flash_bump(pos: Vector2) -> void:
+	bump_sfx.play()
 	var lbl = Label.new()
 	lbl.text = "BUMP!"
 	lbl.add_theme_font_size_override("font_size", 22)

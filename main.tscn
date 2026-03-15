@@ -5,6 +5,10 @@
 [ext_resource type="Texture2D" path="res://Red Car.png"       id="3_car"]
 [ext_resource type="Script"    path="res://griddy_figure.gd"  id="4_griddy_fig"]
 [ext_resource type="Script"    path="res://minimap.gd"        id="5_minimap"]
+[ext_resource type="AudioStream" path="res://audio/crash.wav"  id="6_crash_sfx"]
+[ext_resource type="AudioStream" path="res://audio/bump.wav"   id="7_bump_sfx"]
+[ext_resource type="AudioStream" path="res://audio/countdown_beep.wav" id="8_cd_beep"]
+[ext_resource type="AudioStream" path="res://audio/countdown_go.wav"   id="9_cd_go"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.07, 0.06, 0.18, 0.92)
@@ -423,3 +427,20 @@ color = Color(0, 0, 0, 0)
 mouse_filter = 2
 z_index = 200
 visible = false
+
+; ── Sound effects ─────────────────────────────────────────────────────────
+[node name="CrashSFX" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_crash_sfx")
+volume_db = 0.0
+
+[node name="BumpSFX" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_bump_sfx")
+volume_db = -4.0
+
+[node name="CountdownBeepSFX" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("8_cd_beep")
+volume_db = -2.0
+
+[node name="CountdownGoSFX" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_cd_go")
+volume_db = -2.0
