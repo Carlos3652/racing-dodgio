@@ -5,6 +5,7 @@
 [ext_resource type="Texture2D" path="res://Red Car.png"       id="3_car"]
 [ext_resource type="Script"    path="res://griddy_figure.gd"  id="4_griddy_fig"]
 [ext_resource type="Script"    path="res://minimap.gd"        id="5_minimap"]
+[ext_resource type="AudioStream" path="res://audio/engine_loop.wav" id="6_engine"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.07, 0.06, 0.18, 0.92)
@@ -98,6 +99,11 @@ script = ExtResource("2_player")
 
 [node name="Camera2D" type="Camera2D" parent="PlayerCar"]
 zoom = Vector2(0.65, 0.65)
+
+[node name="EngineAudio" type="AudioStreamPlayer" parent="PlayerCar"]
+stream = ExtResource("6_engine")
+volume_db = -6.0
+autoplay = true
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

@@ -12,6 +12,7 @@ var STUN_DURATION: float = 2.0
 var BOOST_DURATION: float = 5.0
 
 var speed: float = 0.0
+@onready var engine_audio: AudioStreamPlayer = $EngineAudio
 var boost_time: float = 0.0
 var crash_time: float = 0.0
 var bump_time: float = 0.0
@@ -39,6 +40,10 @@ func _ready() -> void:
 	STUN_DURATION  = GameData.player_stun_duration
 	BOOST_DURATION = GameData.player_boost_duration
 	TURN_SPEED     = GameData.player_turn_speed
+	# Engine audio loops continuously — restart when stream finishes
+	if engine_audio:
+		engine_audio.finished.connect(_on_engine_audio_finished)
+		engine_audio.pitch_scale = 0.6
 
 
 func _process(delta: float) -> void:
@@ -69,6 +74,10 @@ func _process(delta: float) -> void:
 
 	var effective_speed = speed * (BUMP_SPEED_MULT if bump_time > 0 else 1.0)
 	position += Vector2.UP.rotated(rotation) * effective_speed * delta
+
+	# Engine pitch follows speed
+	if engine_audio:
+		engine_audio.pitch_scale = lerp(0.6, 1.6, clampf(abs(speed) / MAX_SPEED, 0.0, 1.0))
 
 	# Lap detection
 	if _lap_cooldown > 0:
@@ -122,6 +131,11 @@ static func _segments_intersect(p1: Vector2, p2: Vector2, p3: Vector2, p4: Vecto
 	var t = ((p3.x - p1.x) * d2.y - (p3.y - p1.y) * d2.x) / denom
 	var u = ((p3.x - p1.x) * d1.y - (p3.y - p1.y) * d1.x) / denom
 	return t >= 0.0 and t <= 1.0 and u >= 0.0 and u <= 1.0
+
+
+func _on_engine_audio_finished() -> void:
+	if engine_audio and not has_finished:
+		engine_audio.play()
 
 
 func _cross_finish() -> void:
