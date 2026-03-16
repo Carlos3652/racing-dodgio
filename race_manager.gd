@@ -118,6 +118,8 @@ var _boost_was_active: bool = false
 var minimap:       Control
 var crash_audio:   AudioStreamPlayer
 var bump_audio:    AudioStreamPlayer
+var cd_beep_sfx:   AudioStreamPlayer
+var cd_go_sfx:     AudioStreamPlayer
 
 # StyleBoxFlat instances for dynamic bar coloring
 var _boost_style:  StyleBoxFlat
@@ -710,6 +712,8 @@ func _place_obstacles() -> void:
 func _setup_audio() -> void:
 	crash_audio = $CrashAudio as AudioStreamPlayer
 	bump_audio  = $BumpAudio  as AudioStreamPlayer
+	cd_beep_sfx = $CountdownBeepAudio as AudioStreamPlayer
+	cd_go_sfx   = $CountdownGoAudio   as AudioStreamPlayer
 
 
 func _setup_hud_refs() -> void:
@@ -964,9 +968,11 @@ func _process(delta: float) -> void:
 				if d != last_digit_shown:
 					last_digit_shown = d
 					_show_countdown_digit(str(d), Color(1, 0.9, 0.1))
+					cd_beep_sfx.play()
 			elif last_digit_shown != 0:
 				last_digit_shown = 0
 				_show_countdown_digit("GO!", Color(0.2, 1.0, 0.3), 108)
+				cd_go_sfx.play()
 			if countdown_left <= -0.6:
 				_hide_countdown()
 				state = State.RACING

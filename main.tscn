@@ -8,6 +8,8 @@
 [ext_resource type="AudioStream" path="res://audio/engine_loop.wav" id="6_engine"]
 [ext_resource type="AudioStream" path="res://audio/crash.wav"       id="7_crash"]
 [ext_resource type="AudioStream" path="res://audio/bump.wav"        id="8_bump"]
+[ext_resource type="AudioStream" path="res://audio/countdown_beep.wav" id="9_cd_beep"]
+[ext_resource type="AudioStream" path="res://audio/countdown_go.wav"   id="10_cd_go"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.07, 0.06, 0.18, 0.92)
@@ -114,6 +116,14 @@ volume_db = -4.0
 [node name="BumpAudio" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("8_bump")
 volume_db = -8.0
+
+[node name="CountdownBeepAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_cd_beep")
+volume_db = -2.0
+
+[node name="CountdownGoAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("10_cd_go")
+volume_db = -2.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
