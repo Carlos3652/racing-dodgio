@@ -19,6 +19,20 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	# Boost speed trail ghosts — drawn BEFORE car body so the car renders on top
+	if is_player_car:
+		var parent = get_parent()
+		if parent and "boost_time" in parent and parent.boost_time > 0:
+			# Speed trail: 3 ghost copies behind the car along negative velocity
+			# In local space, the car faces -Y so "behind" is +Y
+			# Draw farthest ghost first so closer (brighter) ghosts layer on top
+			var ghost_offsets := [60.0, 40.0, 20.0]
+			var ghost_alphas := [0.08, 0.20, 0.35]
+			for i in range(3):
+				draw_set_transform(Vector2(0, ghost_offsets[i]))
+				_draw_ghost(Color(car_color.r, car_color.g, car_color.b, ghost_alphas[i]))
+			draw_set_transform(Vector2.ZERO)
+
 	match car_type:
 		"player": _draw_player()
 		"blue":   _draw_blue()
@@ -26,20 +40,10 @@ func _draw() -> void:
 		"orange": _draw_orange()
 		"purple": _draw_purple()
 
-	# Boost speed trail ghosts + exhaust glow — works for any car type when driven by player
+	# Boost exhaust glow — drawn AFTER car body so it appears on top
 	if is_player_car:
 		var parent = get_parent()
 		if parent and "boost_time" in parent and parent.boost_time > 0:
-			# Speed trail: 3 ghost copies behind the car along negative velocity
-			# In local space, the car faces -Y so "behind" is +Y
-			var ghost_alphas := [0.35, 0.20, 0.08]
-			var ghost_offsets := [20.0, 40.0, 60.0]
-			for i in range(3):
-				draw_set_transform(Vector2(0, ghost_offsets[i]))
-				_draw_ghost(Color(car_color.r, car_color.g, car_color.b, ghost_alphas[i]))
-			draw_set_transform(Vector2.ZERO)
-
-			# Exhaust glow
 			draw_arc(Vector2(0, 40), 10, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.65), true)
 			draw_arc(Vector2(0, 40), 17, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.22), true)
 
