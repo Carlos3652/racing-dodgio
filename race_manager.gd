@@ -1365,20 +1365,13 @@ func _do_camera_shake() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Star sparkle on cookie collect
+# Star collect particle burst effect
 # ---------------------------------------------------------------------------
 func _sparkle_at(pos: Vector2) -> void:
-	var lbl = Label.new()
-	lbl.text = "* BOOST! *"
-	lbl.add_theme_font_size_override("font_size", 26)
-	lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.1, 1))
-	lbl.position = pos + Vector2(-52, -24)
-	lbl.z_index  = 20
-	add_child(lbl)
-	var tw = create_tween()
-	tw.tween_property(lbl, "position:y", lbl.position.y - 50, 0.6)
-	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.6)
-	tw.tween_callback(func(): lbl.queue_free())
+	var burst = _CollectBurst.new()
+	burst.position = pos
+	burst.z_index  = 20
+	add_child(burst)
 
 
 func _sparkle_close_call(pos: Vector2) -> void:
@@ -1404,3 +1397,48 @@ func _change_scene(path: String) -> void:
 	var tw = create_tween()
 	tw.tween_property(fade_overlay, "color:a", 1.0, 0.4)
 	tw.tween_callback(func(): get_tree().change_scene_to_file(path))
+
+
+# ---------------------------------------------------------------------------
+# Particle burst inner class for star/cookie collection
+# ---------------------------------------------------------------------------
+class _CollectBurst extends Node2D:
+	const PARTICLE_COUNT := 14
+	const BURST_DURATION := 0.5
+	const BURST_COLORS := [
+		Color("#FFD740"),  # gold
+		Color(1, 1, 1, 1),  # white
+		Color("#00E5FF"),  # cyan
+	]
+
+	var _particles := []   # Array of Dicts: {offset, size, color}
+	var _alpha := 1.0
+	var _time := 0.0
+	var _speeds := []      # radial speed per particle
+	var _angles := []      # angle per particle
+
+	func _ready() -> void:
+		for i in PARTICLE_COUNT:
+			var angle = TAU * float(i) / float(PARTICLE_COUNT) + randf_range(-0.15, 0.15)
+			var speed = randf_range(120.0, 220.0)
+			var sz = randf_range(3.0, 5.0)
+			var col = BURST_COLORS[i % BURST_COLORS.size()]
+			_angles.append(angle)
+			_speeds.append(speed)
+			_particles.append({offset = Vector2.ZERO, size = sz, color = col})
+		var tw = create_tween()
+		tw.tween_property(self, "_alpha", 0.0, BURST_DURATION)
+		tw.tween_callback(queue_free)
+
+	func _process(delta: float) -> void:
+		_time += delta
+		for i in _particles.size():
+			var dist = _speeds[i] * _time
+			_particles[i].offset = Vector2(cos(_angles[i]), sin(_angles[i])) * dist
+		queue_redraw()
+
+	func _draw() -> void:
+		for p in _particles:
+			var col = p.color
+			col.a = _alpha
+			draw_rect(Rect2(p.offset - Vector2(p.size, p.size) * 0.5, Vector2(p.size, p.size)), col)
