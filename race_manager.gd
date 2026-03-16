@@ -116,6 +116,8 @@ var camera:        Camera2D
 var _zoom_tween:   Tween = null
 var _boost_was_active: bool = false
 var minimap:       Control
+var crash_audio:   AudioStreamPlayer
+var bump_audio:    AudioStreamPlayer
 
 # StyleBoxFlat instances for dynamic bar coloring
 var _boost_style:  StyleBoxFlat
@@ -143,6 +145,7 @@ func _ready() -> void:
 	_build_track_path()
 	_place_obstacles()
 	_setup_hud_refs()
+	_setup_audio()
 	_setup_minimap()
 	_setup_griddy()
 
@@ -704,6 +707,11 @@ func _place_obstacles() -> void:
 # ---------------------------------------------------------------------------
 # HUD setup
 # ---------------------------------------------------------------------------
+func _setup_audio() -> void:
+	crash_audio = $CrashAudio as AudioStreamPlayer
+	bump_audio  = $BumpAudio  as AudioStreamPlayer
+
+
 func _setup_hud_refs() -> void:
 	hud_place_numeral = $HUD/StatPanel/StatVBox/PositionRow/PlaceNumeral
 	hud_place_suffix  = $HUD/StatPanel/StatVBox/PositionRow/PlaceSuffix
@@ -1080,6 +1088,8 @@ func _check_car_bumps(delta: float) -> void:
 
 
 func _flash_bump(pos: Vector2) -> void:
+	if bump_audio and not bump_audio.playing:
+		bump_audio.play()
 	var lbl = Label.new()
 	lbl.text = "BUMP!"
 	lbl.add_theme_font_size_override("font_size", 22)
@@ -1115,6 +1125,8 @@ func _constrain_to_road() -> void:
 
 
 func _flash_screen() -> void:
+	if crash_audio:
+		crash_audio.play()
 	crash_label.visible    = true
 	crash_label.modulate.a = 1.0
 	_do_camera_shake()

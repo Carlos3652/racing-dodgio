@@ -6,6 +6,8 @@
 [ext_resource type="Script"    path="res://griddy_figure.gd"  id="4_griddy_fig"]
 [ext_resource type="Script"    path="res://minimap.gd"        id="5_minimap"]
 [ext_resource type="AudioStream" path="res://audio/engine_loop.wav" id="6_engine"]
+[ext_resource type="AudioStream" path="res://audio/crash.wav"       id="7_crash"]
+[ext_resource type="AudioStream" path="res://audio/bump.wav"        id="8_bump"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.07, 0.06, 0.18, 0.92)
@@ -104,6 +106,14 @@ zoom = Vector2(0.65, 0.65)
 stream = ExtResource("6_engine")
 volume_db = -6.0
 autoplay = true
+
+[node name="CrashAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_crash")
+volume_db = -4.0
+
+[node name="BumpAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("8_bump")
+volume_db = -8.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
