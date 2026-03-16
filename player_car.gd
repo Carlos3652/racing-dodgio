@@ -56,12 +56,17 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if not is_racing or has_finished:
+		if engine_audio and not is_racing:
+			engine_audio.pitch_scale = 0.6
 		return
 
 	if bump_time > 0:
 		bump_time -= delta
 	if crash_time > 0:
 		crash_time -= delta
+		# Keep engine at idle pitch while stunned
+		if engine_audio:
+			engine_audio.pitch_scale = 0.6
 		return
 
 	if Input.is_action_pressed("ui_left"):
@@ -168,4 +173,6 @@ func _cross_finish() -> void:
 		return
 	has_finished = true
 	speed = 0.0
+	if engine_audio:
+		engine_audio.stop()
 	finished.emit("You")
