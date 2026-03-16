@@ -113,6 +113,8 @@ var finish_banner: Label
 var intro_card:    Label
 var fade_overlay:  ColorRect
 var camera:        Camera2D
+var _zoom_tween:   Tween = null
+var _boost_was_active: bool = false
 var minimap:       Control
 
 # StyleBoxFlat instances for dynamic bar coloring
@@ -888,6 +890,22 @@ func _update_hud(delta: float) -> void:
 	else:
 		hype_bar.value = 0.0
 		hype_label.text = "..."
+
+	# Camera zoom-out while boost is active
+	var boost_active = player.boost_time > 0
+	if boost_active and not _boost_was_active:
+		if _zoom_tween and _zoom_tween.is_valid():
+			_zoom_tween.kill()
+		_zoom_tween = create_tween()
+		_zoom_tween.tween_property(camera, "zoom", Vector2(0.88, 0.88), 0.3) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	elif not boost_active and _boost_was_active:
+		if _zoom_tween and _zoom_tween.is_valid():
+			_zoom_tween.kill()
+		_zoom_tween = create_tween()
+		_zoom_tween.tween_property(camera, "zoom", Vector2(1.0, 1.0), 0.3) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_boost_was_active = boost_active
 
 
 func _get_player_place() -> int:
