@@ -20,6 +20,14 @@ var has_finished: bool = false
 var is_racing: bool = false
 var track_progress: float = 0.0  # curve offset — used for place calc
 
+# Drift boost
+var is_drifting: bool = false
+var drift_time: float = 0.0
+const DRIFT_BOOST_THRESHOLD = 1.5
+const DRIFT_BOOST_MULT = 1.25
+const DRIFT_BOOST_DURATION = 1.5
+var _prev_rotation: float = 0.0
+
 # Lap tracking
 var current_lap: int = 0
 var total_laps: int = 3
@@ -60,6 +68,23 @@ func _process(delta: float) -> void:
 		rotation -= TURN_SPEED * delta
 	if Input.is_action_pressed("ui_right"):
 		rotation += TURN_SPEED * delta
+
+	# Drift boost accumulation
+	var rotation_delta = rotation - _prev_rotation
+	_prev_rotation = rotation
+	var drift_held = Input.is_action_pressed("drift")
+	if drift_held and abs(rotation_delta) > 0.04:
+		is_drifting = true
+		drift_time += delta
+	elif drift_held and is_drifting:
+		# Still holding drift but not turning hard — keep accumulating at half rate
+		drift_time += delta * 0.5
+	else:
+		# Released drift or never held
+		if is_drifting and drift_time >= DRIFT_BOOST_THRESHOLD:
+			apply_close_call_boost(DRIFT_BOOST_DURATION)
+		is_drifting = false
+		drift_time = 0.0
 
 	var top = BOOST_SPEED if boost_time > 0 else MAX_SPEED
 	if boost_time > 0:

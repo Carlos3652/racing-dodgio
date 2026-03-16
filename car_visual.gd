@@ -40,6 +40,25 @@ func _draw() -> void:
 		"orange": _draw_orange()
 		"purple": _draw_purple()
 
+	# Drift smoke — drawn AFTER car body, behind the car
+	if is_player_car:
+		var parent = get_parent()
+		if parent and "is_drifting" in parent and parent.is_drifting:
+			var dt = parent.drift_time if "drift_time" in parent else 0.0
+			# Smoke puffs at rear wheels — intensity grows with drift_time
+			var smoke_alpha = clampf(dt / 1.5, 0.15, 0.55)
+			var smoke_radius = lerp(6.0, 14.0, clampf(dt / 1.5, 0.0, 1.0))
+			# Left rear wheel smoke
+			draw_circle(Vector2(-18, 32), smoke_radius, Color(0.85, 0.85, 0.85, smoke_alpha))
+			draw_circle(Vector2(-18, 38), smoke_radius * 0.7, Color(0.80, 0.80, 0.80, smoke_alpha * 0.6))
+			# Right rear wheel smoke
+			draw_circle(Vector2(18, 32), smoke_radius, Color(0.85, 0.85, 0.85, smoke_alpha))
+			draw_circle(Vector2(18, 38), smoke_radius * 0.7, Color(0.80, 0.80, 0.80, smoke_alpha * 0.6))
+			# Ready indicator — glow when drift_time >= threshold
+			if dt >= 1.5:
+				draw_circle(Vector2(-18, 32), smoke_radius + 3, Color(1.0, 0.6, 0.1, 0.35))
+				draw_circle(Vector2(18, 32), smoke_radius + 3, Color(1.0, 0.6, 0.1, 0.35))
+
 	# Boost exhaust glow — drawn AFTER car body so it appears on top
 	if is_player_car:
 		var parent = get_parent()
