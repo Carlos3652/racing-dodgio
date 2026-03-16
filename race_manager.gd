@@ -644,6 +644,7 @@ func _build_track_path() -> void:
 		# Apply personality archetype
 		if AI_PERSONALITIES.has(ai_roster[i].name):
 			ai.personality = AI_PERSONALITIES[ai_roster[i].name].duplicate()
+		ai.player_ref = player
 		ai.finished.connect(_on_car_finished)
 		track_path.add_child(ai)
 		ai_cars.append(ai)

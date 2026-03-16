@@ -37,6 +37,11 @@ var personality: Dictionary = {}
 var bump_radius_bonus: float = 0.0  # added to base bump_dist for "blocker" types
 var ai_boost_duration: float = 5.0  # can be shortened for "phantom"
 
+# Rubber-band catch-up / pullback
+@export var CATCHUP_BONUS: float = 25.0
+@export var PULLBACK_PENALTY: float = 15.0
+var player_ref: Node2D = null
+
 # "Mind of their own" fields
 var noise_speed: float = 0.0
 var noise_timer: float = 0.0
@@ -130,6 +135,23 @@ func _process(delta: float) -> void:
 		speed = BOOST_SPEED
 	else:
 		var current_base = BASE_SPEED + speed_bonus
+
+		# Rubber-band catch-up / pullback
+		if player_ref != null and is_instance_valid(player_ref) and not player_ref.has_finished:
+			var curve_len := 0.0
+			if get_parent() is Path2D:
+				curve_len = (get_parent() as Path2D).curve.get_baked_length()
+			if curve_len > 0.0:
+				var total_track := curve_len * float(total_laps)
+				var threshold := total_track * 0.1
+				var player_total := float(player_ref.current_lap) * curve_len + player_ref.track_progress
+				var ai_total := get_total_progress()
+				var gap := player_total - ai_total
+				if gap > threshold:
+					current_base += CATCHUP_BONUS
+				elif gap < -threshold:
+					current_base -= PULLBACK_PENALTY
+
 		var current_max = min(MAX_SPEED + speed_bonus, SPEEDUP_CAP)
 		speed = clamp(current_base + noise_speed, MIN_SPEED, current_max)
 
