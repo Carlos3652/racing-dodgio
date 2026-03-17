@@ -93,6 +93,8 @@ var _player_finished: bool  = false
 var _player_finish_timer: float = 0.0
 const FORCE_FINISH_DELAY: float = 10.0
 const RACE_TIMEOUT: float = 300.0
+const BASE_ZOOM = Vector2(0.65, 0.65)
+const BOOST_ZOOM_FACTOR = 0.88
 
 # Race stats tracking (written to GameData at end)
 var _stat_stars: int = 0
@@ -909,13 +911,13 @@ func _update_hud(delta: float) -> void:
 		if _zoom_tween and _zoom_tween.is_valid():
 			_zoom_tween.kill()
 		_zoom_tween = create_tween()
-		_zoom_tween.tween_property(camera, "zoom", Vector2(0.88, 0.88), 0.3) \
+		_zoom_tween.tween_property(camera, "zoom", BASE_ZOOM * BOOST_ZOOM_FACTOR, 0.3) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	elif not boost_active and _boost_was_active:
 		if _zoom_tween and _zoom_tween.is_valid():
 			_zoom_tween.kill()
 		_zoom_tween = create_tween()
-		_zoom_tween.tween_property(camera, "zoom", Vector2(1.0, 1.0), 0.3) \
+		_zoom_tween.tween_property(camera, "zoom", BASE_ZOOM, 0.3) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_boost_was_active = boost_active
 
