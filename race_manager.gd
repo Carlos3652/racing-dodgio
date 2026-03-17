@@ -842,7 +842,7 @@ func _update_hud(delta: float) -> void:
 	var place = _get_player_place()
 	var sfx   = ["", "st", "nd", "rd", "th", "th"]
 	hud_place_numeral.text = str(place)
-	hud_place_suffix.text  = sfx[clamp(place, 0, 5)]
+	hud_place_suffix.text  = sfx[clamp(place, 1, 5)]
 
 	match place:
 		1: hud_place_numeral.add_theme_color_override("font_color", Color(1.0,  0.85, 0.10, 1))  # gold
@@ -1305,7 +1305,7 @@ func _record_finish(car_name: String) -> void:
 		_finish_banner_shown = true
 		var place    = finishers_count
 		var suffixes = ["", "st", "nd", "rd", "th", "th"]
-		var suf      = suffixes[clamp(place, 0, 5)]
+		var suf      = suffixes[clamp(place, 1, 5)]
 		finish_banner.text = "RACE COMPLETE - %d%s!" % [place, suf]
 		finish_banner.visible    = true
 		finish_banner.modulate.a = 0.0
