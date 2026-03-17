@@ -113,7 +113,13 @@ var finish_banner: Label
 var intro_card:    Label
 var fade_overlay:  ColorRect
 var camera:        Camera2D
+var _zoom_tween:   Tween = null
+var _boost_was_active: bool = false
 var minimap:       Control
+var crash_audio:   AudioStreamPlayer
+var bump_audio:    AudioStreamPlayer
+var cd_beep_sfx:   AudioStreamPlayer
+var cd_go_sfx:     AudioStreamPlayer
 
 # StyleBoxFlat instances for dynamic bar coloring
 var _boost_style:  StyleBoxFlat
@@ -141,6 +147,7 @@ func _ready() -> void:
 	_build_track_path()
 	_place_obstacles()
 	_setup_hud_refs()
+	_setup_audio()
 	_setup_minimap()
 	_setup_griddy()
 
@@ -585,8 +592,8 @@ func _build_track_path() -> void:
 	# F1-style staggered grid: 2 columns, rows spaced behind the start line
 	# Grid positions: row 0 = pole, row 1 = P2/P3, row 2 = P4/P5
 	var total_slots = 1 + spawn_count
-	var row_spacing = 80.0   # distance between grid rows along the track
-	var col_offset  = ROAD_WIDTH * 0.20  # lateral offset from center (left/right)
+	var row_spacing = 110.0  # distance between grid rows along the track (~2 car lengths)
+	var col_offset  = ROAD_WIDTH * 0.27  # lateral offset from center (~204px apart)
 
 	# Build grid slots: [{row, side}] — side: -1 = left, +1 = right
 	# Row 0: center (pole). Row 1+: alternating left/right
@@ -637,13 +644,14 @@ func _build_track_path() -> void:
 		ai.car_label    = ai_roster[i].name
 		ai.car_color    = ai_roster[i].color
 		# Stagger start progress along track based on grid row (further back = less progress)
-		ai.progress     = max(10.0 - slot.row * row_spacing, 0.0)
+		ai.progress     = max(row_spacing - slot.row * row_spacing, 0.0)
 		ai.lane_offset  = col_offset * slot.side
 		ai.scale        = CAR_SCALE
 		ai.total_laps = GameData.TOTAL_LAPS
 		# Apply personality archetype
 		if AI_PERSONALITIES.has(ai_roster[i].name):
 			ai.personality = AI_PERSONALITIES[ai_roster[i].name].duplicate()
+		ai.player_ref = player
 		ai.finished.connect(_on_car_finished)
 		track_path.add_child(ai)
 		ai_cars.append(ai)
@@ -701,6 +709,13 @@ func _place_obstacles() -> void:
 # ---------------------------------------------------------------------------
 # HUD setup
 # ---------------------------------------------------------------------------
+func _setup_audio() -> void:
+	crash_audio = $CrashAudio as AudioStreamPlayer
+	bump_audio  = $BumpAudio  as AudioStreamPlayer
+	cd_beep_sfx = $CountdownBeepAudio as AudioStreamPlayer
+	cd_go_sfx   = $CountdownGoAudio   as AudioStreamPlayer
+
+
 func _setup_hud_refs() -> void:
 	hud_place_numeral = $HUD/StatPanel/StatVBox/PositionRow/PlaceNumeral
 	hud_place_suffix  = $HUD/StatPanel/StatVBox/PositionRow/PlaceSuffix
@@ -888,6 +903,22 @@ func _update_hud(delta: float) -> void:
 		hype_bar.value = 0.0
 		hype_label.text = "..."
 
+	# Camera zoom-out while boost is active
+	var boost_active = player.boost_time > 0
+	if boost_active and not _boost_was_active:
+		if _zoom_tween and _zoom_tween.is_valid():
+			_zoom_tween.kill()
+		_zoom_tween = create_tween()
+		_zoom_tween.tween_property(camera, "zoom", Vector2(0.88, 0.88), 0.3) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	elif not boost_active and _boost_was_active:
+		if _zoom_tween and _zoom_tween.is_valid():
+			_zoom_tween.kill()
+		_zoom_tween = create_tween()
+		_zoom_tween.tween_property(camera, "zoom", Vector2(1.0, 1.0), 0.3) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_boost_was_active = boost_active
+
 
 func _get_player_place() -> int:
 	# Once player has finished, lock to their recorded finish position
@@ -937,9 +968,11 @@ func _process(delta: float) -> void:
 				if d != last_digit_shown:
 					last_digit_shown = d
 					_show_countdown_digit(str(d), Color(1, 0.9, 0.1))
+					cd_beep_sfx.play()
 			elif last_digit_shown != 0:
 				last_digit_shown = 0
 				_show_countdown_digit("GO!", Color(0.2, 1.0, 0.3), 108)
+				cd_go_sfx.play()
 			if countdown_left <= -0.6:
 				_hide_countdown()
 				state = State.RACING
@@ -1061,6 +1094,8 @@ func _check_car_bumps(delta: float) -> void:
 
 
 func _flash_bump(pos: Vector2) -> void:
+	if bump_audio and not bump_audio.playing:
+		bump_audio.play()
 	var lbl = Label.new()
 	lbl.text = "BUMP!"
 	lbl.add_theme_font_size_override("font_size", 22)
@@ -1096,6 +1131,8 @@ func _constrain_to_road() -> void:
 
 
 func _flash_screen() -> void:
+	if crash_audio:
+		crash_audio.play()
 	crash_label.visible    = true
 	crash_label.modulate.a = 1.0
 	_do_camera_shake()
@@ -1346,20 +1383,13 @@ func _do_camera_shake() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Star sparkle on cookie collect
+# Star collect particle burst effect
 # ---------------------------------------------------------------------------
 func _sparkle_at(pos: Vector2) -> void:
-	var lbl = Label.new()
-	lbl.text = "* BOOST! *"
-	lbl.add_theme_font_size_override("font_size", 26)
-	lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.1, 1))
-	lbl.position = pos + Vector2(-52, -24)
-	lbl.z_index  = 20
-	add_child(lbl)
-	var tw = create_tween()
-	tw.tween_property(lbl, "position:y", lbl.position.y - 50, 0.6)
-	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.6)
-	tw.tween_callback(func(): lbl.queue_free())
+	var burst = _CollectBurst.new()
+	burst.position = pos
+	burst.z_index  = 20
+	add_child(burst)
 
 
 func _sparkle_close_call(pos: Vector2) -> void:
@@ -1385,3 +1415,48 @@ func _change_scene(path: String) -> void:
 	var tw = create_tween()
 	tw.tween_property(fade_overlay, "color:a", 1.0, 0.4)
 	tw.tween_callback(func(): get_tree().change_scene_to_file(path))
+
+
+# ---------------------------------------------------------------------------
+# Particle burst inner class for star/cookie collection
+# ---------------------------------------------------------------------------
+class _CollectBurst extends Node2D:
+	const PARTICLE_COUNT := 14
+	const BURST_DURATION := 0.5
+	const BURST_COLORS := [
+		Color("#FFD740"),  # gold
+		Color(1, 1, 1, 1),  # white
+		Color("#00E5FF"),  # cyan
+	]
+
+	var _particles := []   # Array of Dicts: {offset, size, color}
+	var _alpha := 1.0
+	var _time := 0.0
+	var _speeds := []      # radial speed per particle
+	var _angles := []      # angle per particle
+
+	func _ready() -> void:
+		for i in PARTICLE_COUNT:
+			var angle = TAU * float(i) / float(PARTICLE_COUNT) + randf_range(-0.15, 0.15)
+			var speed = randf_range(120.0, 220.0)
+			var sz = randf_range(3.0, 5.0)
+			var col = BURST_COLORS[i % BURST_COLORS.size()]
+			_angles.append(angle)
+			_speeds.append(speed)
+			_particles.append({offset = Vector2.ZERO, size = sz, color = col})
+		var tw = create_tween()
+		tw.tween_property(self, "_alpha", 0.0, BURST_DURATION)
+		tw.tween_callback(queue_free)
+
+	func _process(delta: float) -> void:
+		_time += delta
+		for i in _particles.size():
+			var dist = _speeds[i] * _time
+			_particles[i].offset = Vector2(cos(_angles[i]), sin(_angles[i])) * dist
+		queue_redraw()
+
+	func _draw() -> void:
+		for p in _particles:
+			var col = p.color
+			col.a = _alpha
+			draw_rect(Rect2(p.offset - Vector2(p.size, p.size) * 0.5, Vector2(p.size, p.size)), col)

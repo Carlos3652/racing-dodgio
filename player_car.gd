@@ -12,12 +12,21 @@ var STUN_DURATION: float = 2.0
 var BOOST_DURATION: float = 5.0
 
 var speed: float = 0.0
+@onready var engine_audio: AudioStreamPlayer = $EngineAudio
 var boost_time: float = 0.0
 var crash_time: float = 0.0
 var bump_time: float = 0.0
 var has_finished: bool = false
 var is_racing: bool = false
 var track_progress: float = 0.0  # curve offset — used for place calc
+
+# Drift boost
+var is_drifting: bool = false
+var drift_time: float = 0.0
+const DRIFT_BOOST_THRESHOLD = 1.5
+const DRIFT_BOOST_MULT = 1.25
+const DRIFT_BOOST_DURATION = 1.5
+var _prev_rotation: float = 0.0
 
 # Lap tracking
 var current_lap: int = 0
@@ -39,22 +48,48 @@ func _ready() -> void:
 	STUN_DURATION  = GameData.player_stun_duration
 	BOOST_DURATION = GameData.player_boost_duration
 	TURN_SPEED     = GameData.player_turn_speed
+	# Engine audio loops continuously — restart when stream finishes
+	if engine_audio:
+		engine_audio.finished.connect(_on_engine_audio_finished)
+		engine_audio.pitch_scale = 0.6
 
 
 func _process(delta: float) -> void:
 	if not is_racing or has_finished:
+		if engine_audio and not is_racing:
+			engine_audio.pitch_scale = 0.6
 		return
 
 	if bump_time > 0:
 		bump_time -= delta
 	if crash_time > 0:
 		crash_time -= delta
+		# Keep engine at idle pitch while stunned
+		if engine_audio:
+			engine_audio.pitch_scale = 0.6
 		return
 
 	if Input.is_action_pressed("ui_left"):
 		rotation -= TURN_SPEED * delta
 	if Input.is_action_pressed("ui_right"):
 		rotation += TURN_SPEED * delta
+
+	# Drift boost accumulation
+	var rotation_delta = rotation - _prev_rotation
+	_prev_rotation = rotation
+	var drift_held = Input.is_action_pressed("drift")
+	if drift_held and abs(rotation_delta) > 0.04:
+		is_drifting = true
+		drift_time += delta
+	elif drift_held and is_drifting:
+		# Still holding drift but not turning hard — keep accumulating at half rate
+		drift_time += delta * 0.5
+	else:
+		# Released drift or never held
+		if is_drifting and drift_time >= DRIFT_BOOST_THRESHOLD:
+			apply_close_call_boost(DRIFT_BOOST_DURATION)
+		is_drifting = false
+		drift_time = 0.0
 
 	var top = BOOST_SPEED if boost_time > 0 else MAX_SPEED
 	if boost_time > 0:
@@ -69,6 +104,10 @@ func _process(delta: float) -> void:
 
 	var effective_speed = speed * (BUMP_SPEED_MULT if bump_time > 0 else 1.0)
 	position += Vector2.UP.rotated(rotation) * effective_speed * delta
+
+	# Engine pitch follows speed
+	if engine_audio:
+		engine_audio.pitch_scale = lerp(0.6, 1.6, clampf(abs(speed) / MAX_SPEED, 0.0, 1.0))
 
 	# Lap detection
 	if _lap_cooldown > 0:
@@ -124,9 +163,16 @@ static func _segments_intersect(p1: Vector2, p2: Vector2, p3: Vector2, p4: Vecto
 	return t >= 0.0 and t <= 1.0 and u >= 0.0 and u <= 1.0
 
 
+func _on_engine_audio_finished() -> void:
+	if engine_audio and not has_finished:
+		engine_audio.play()
+
+
 func _cross_finish() -> void:
 	if has_finished:
 		return
 	has_finished = true
 	speed = 0.0
+	if engine_audio:
+		engine_audio.stop()
 	finished.emit("You")

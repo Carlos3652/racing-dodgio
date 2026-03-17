@@ -5,6 +5,11 @@
 [ext_resource type="Texture2D" path="res://Red Car.png"       id="3_car"]
 [ext_resource type="Script"    path="res://griddy_figure.gd"  id="4_griddy_fig"]
 [ext_resource type="Script"    path="res://minimap.gd"        id="5_minimap"]
+[ext_resource type="AudioStream" path="res://audio/engine_loop.wav" id="6_engine"]
+[ext_resource type="AudioStream" path="res://audio/crash.wav"       id="7_crash"]
+[ext_resource type="AudioStream" path="res://audio/bump.wav"        id="8_bump"]
+[ext_resource type="AudioStream" path="res://audio/countdown_beep.wav" id="9_cd_beep"]
+[ext_resource type="AudioStream" path="res://audio/countdown_go.wav"   id="10_cd_go"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat"]
 bg_color = Color(0.07, 0.06, 0.18, 0.92)
@@ -98,6 +103,27 @@ script = ExtResource("2_player")
 
 [node name="Camera2D" type="Camera2D" parent="PlayerCar"]
 zoom = Vector2(0.65, 0.65)
+
+[node name="EngineAudio" type="AudioStreamPlayer" parent="PlayerCar"]
+stream = ExtResource("6_engine")
+volume_db = -6.0
+autoplay = true
+
+[node name="CrashAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_crash")
+volume_db = -4.0
+
+[node name="BumpAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("8_bump")
+volume_db = -8.0
+
+[node name="CountdownBeepAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("9_cd_beep")
+volume_db = -2.0
+
+[node name="CountdownGoAudio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("10_cd_go")
+volume_db = -2.0
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

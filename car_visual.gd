@@ -19,6 +19,20 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	# Boost speed trail ghosts — drawn BEFORE car body so the car renders on top
+	if is_player_car:
+		var parent = get_parent()
+		if parent and "boost_time" in parent and parent.boost_time > 0:
+			# Speed trail: 3 ghost copies behind the car along negative velocity
+			# In local space, the car faces -Y so "behind" is +Y
+			# Draw farthest ghost first so closer (brighter) ghosts layer on top
+			var ghost_offsets := [60.0, 40.0, 20.0]
+			var ghost_alphas := [0.08, 0.20, 0.35]
+			for i in range(3):
+				draw_set_transform(Vector2(0, ghost_offsets[i]))
+				_draw_ghost(Color(car_color.r, car_color.g, car_color.b, ghost_alphas[i]))
+			draw_set_transform(Vector2.ZERO)
+
 	match car_type:
 		"player": _draw_player()
 		"blue":   _draw_blue()
@@ -26,7 +40,26 @@ func _draw() -> void:
 		"orange": _draw_orange()
 		"purple": _draw_purple()
 
-	# Boost exhaust glow — works for any car type when driven by player
+	# Drift smoke — drawn AFTER car body, behind the car
+	if is_player_car:
+		var parent = get_parent()
+		if parent and "is_drifting" in parent and parent.is_drifting:
+			var dt = parent.drift_time if "drift_time" in parent else 0.0
+			# Smoke puffs at rear wheels — intensity grows with drift_time
+			var smoke_alpha = clampf(dt / 1.5, 0.15, 0.55)
+			var smoke_radius = lerp(6.0, 14.0, clampf(dt / 1.5, 0.0, 1.0))
+			# Left rear wheel smoke
+			draw_circle(Vector2(-18, 32), smoke_radius, Color(0.85, 0.85, 0.85, smoke_alpha))
+			draw_circle(Vector2(-18, 38), smoke_radius * 0.7, Color(0.80, 0.80, 0.80, smoke_alpha * 0.6))
+			# Right rear wheel smoke
+			draw_circle(Vector2(18, 32), smoke_radius, Color(0.85, 0.85, 0.85, smoke_alpha))
+			draw_circle(Vector2(18, 38), smoke_radius * 0.7, Color(0.80, 0.80, 0.80, smoke_alpha * 0.6))
+			# Ready indicator — glow when drift_time >= threshold
+			if dt >= 1.5:
+				draw_circle(Vector2(-18, 32), smoke_radius + 3, Color(1.0, 0.6, 0.1, 0.35))
+				draw_circle(Vector2(18, 32), smoke_radius + 3, Color(1.0, 0.6, 0.1, 0.35))
+
+	# Boost exhaust glow — drawn AFTER car body so it appears on top
 	if is_player_car:
 		var parent = get_parent()
 		if parent and "boost_time" in parent and parent.boost_time > 0:
@@ -41,6 +74,11 @@ func _shade(col: Color, f: float) -> Color:
 
 func _shadow(ry: float = 12.0) -> void:
 	draw_arc(Vector2(2.0, 5.0), ry * 2.0, 0.0, TAU, 16, Color(0, 0, 0, 0.30), true)
+
+func _draw_ghost(col: Color) -> void:
+	# Simplified car body (rectangle + windshield) used for speed trail ghosts
+	draw_rect(Rect2(-22, -36, 44, 72), col)
+	draw_rect(Rect2(-14, -28, 28, 16), Color(_WINDSHIELD.r, _WINDSHIELD.g, _WINDSHIELD.b, col.a * 0.5))
 
 func _initial(text: String) -> void:
 	draw_string(ThemeDB.fallback_font, Vector2(0, 5),
