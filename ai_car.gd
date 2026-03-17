@@ -162,14 +162,16 @@ func _process(delta: float) -> void:
 	progress += speed * delta
 
 	# Apply lane offset perpendicular to path direction (loop-safe with fmod)
+	# FIX: set absolute position instead of accumulating with +=
 	if lane_offset != 0.0 and get_parent() is Path2D:
 		var curve = (get_parent() as Path2D).curve
 		var curve_len = curve.get_baked_length()
 		var sample_pos = fmod(progress, curve_len)
 		var sample_ahead = fmod(progress + 5.0, curve_len)
-		var tangent = (curve.sample_baked(sample_ahead) - curve.sample_baked(sample_pos)).normalized()
+		var base_pos = curve.sample_baked(sample_pos)
+		var tangent = (curve.sample_baked(sample_ahead) - base_pos).normalized()
 		var perp = Vector2(-tangent.y, tangent.x)
-		position += perp * lane_offset
+		position = base_pos + perp * lane_offset
 
 	# Detect lap completion: ratio wraps from >0.8 to <0.2
 	if _prev_progress_ratio > 0.8 and progress_ratio < 0.2:

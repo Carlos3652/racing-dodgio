@@ -208,6 +208,76 @@ def test_performance_improvement():
     return total_samples < 50, total_samples
 
 
+# ─── Additional edge-case tests ───────────────────────────────────
+def test_zero_length_curve():
+    """Zero-length curve should return 0.0 immediately."""
+    curve = FakeCurve2D(0.0)  # radius 0 → length 0
+    result = local_closest_offset(curve, (100.0, 100.0), 50.0)
+    assert result == 0.0, f"Expected 0.0 for zero-length curve, got {result}"
+
+
+def test_very_small_curve():
+    """Curve smaller than search radius should still produce valid result."""
+    curve = FakeCurve2D(30.0)  # length ~188px, less than LOCAL_SEARCH_RADIUS=300
+    curve_len = curve.get_baked_length()
+    hint = 50.0
+    angle = (hint / curve_len) * 2.0 * math.pi + 0.02
+    pos = (32.0 * math.cos(angle), 32.0 * math.sin(angle))
+
+    local_off = local_closest_offset(curve, pos, hint)
+    true_off = curve.get_closest_offset(pos)
+
+    err = abs(local_off - true_off)
+    err = min(err, curve_len - err)
+    assert err < 10.0, f"Small curve error too large: {err}"
+
+
+def test_hint_at_curve_end():
+    """Hint near curve_len boundary should work correctly."""
+    curve = FakeCurve2D(500.0)
+    curve_len = curve.get_baked_length()
+
+    hint = curve_len - 5.0  # very near end
+    angle = ((curve_len - 5.0) / curve_len) * 2.0 * math.pi
+    pos = (510.0 * math.cos(angle), 510.0 * math.sin(angle))
+
+    local_off = local_closest_offset(curve, pos, hint)
+    true_off = curve.get_closest_offset(pos)
+
+    err = abs(local_off - true_off)
+    err = min(err, curve_len - err)
+    assert err < 10.0, f"Hint-at-end error too large: {err}"
+
+
+def test_player_exactly_on_curve():
+    """Player exactly on the curve (distance=0) should return accurate offset."""
+    curve = FakeCurve2D(500.0)
+    curve_len = curve.get_baked_length()
+
+    hint = 200.0
+    angle = (hint / curve_len) * 2.0 * math.pi
+    pos = (500.0 * math.cos(angle), 500.0 * math.sin(angle))  # exactly on curve
+
+    local_off = local_closest_offset(curve, pos, hint)
+    true_off = curve.get_closest_offset(pos)
+
+    err = abs(local_off - true_off)
+    err = min(err, curve_len - err)
+    assert err < 5.0, f"On-curve error too large: {err}"
+
+
+def test_negative_hint():
+    """Negative hint should trigger fallback to full search."""
+    curve = FakeCurve2D(500.0)
+    pos = (0.0, 510.0)
+
+    local_off = local_closest_offset(curve, pos, -10.0)
+    true_off = curve.get_closest_offset(pos)
+
+    err = abs(local_off - true_off)
+    assert err < 0.01, f"Negative hint should fallback to full search, err={err}"
+
+
 # ─── Runner ────────────────────────────────────────────────────────
 def main():
     print("\n══════════════════════════════════════════════════")
