@@ -1117,9 +1117,79 @@ func _play_griddy() -> void:
 	hype_timer = 5.0
 
 
+# ---------------------------------------------------------------------------
+# Bounded local curve search — O(1) replacement for Curve2D.get_closest_offset()
+# Uses track_progress (previous frame) as hint; searches ±SEARCH_RADIUS only.
+# Falls back to full O(n) search on first frame or when local result is too far.
+# ---------------------------------------------------------------------------
+const LOCAL_SEARCH_RADIUS: float = 300.0   # px along curve; covers ~36 frames at boost speed
+const LOCAL_SEARCH_STEPS: int    = 16      # coarse samples in the window
+const LOCAL_REFINE_STEPS: int    = 8       # bisection refinement passes
+const LOCAL_FALLBACK_DIST: float = 250.0   # if closest pt > this, redo full search
+
+func _local_closest_offset(curve: Curve2D, pos: Vector2, hint: float) -> float:
+	var curve_len := curve.get_baked_length()
+	if curve_len <= 0.0:
+		return 0.0
+
+	# First frame — no valid hint yet, use full (O(n)) search once
+	if hint <= 0.0 and player.track_progress <= 0.0:
+		return curve.get_closest_offset(pos)
+
+	# Coarse pass: sample LOCAL_SEARCH_STEPS points in [hint - R, hint + R]
+	var lo := hint - LOCAL_SEARCH_RADIUS
+	var hi := hint + LOCAL_SEARCH_RADIUS
+	var step := (hi - lo) / float(LOCAL_SEARCH_STEPS)
+	var best_off := hint
+	var best_dsq := INF
+
+	for i in range(LOCAL_SEARCH_STEPS + 1):
+		var off := lo + step * float(i)
+		# Wrap into [0, curve_len) for looped tracks
+		if off < 0.0:
+			off += curve_len
+		elif off >= curve_len:
+			off -= curve_len
+		var pt := curve.sample_baked(off)
+		var dsq := (pt.x - pos.x) * (pt.x - pos.x) + (pt.y - pos.y) * (pt.y - pos.y)
+		if dsq < best_dsq:
+			best_dsq = dsq
+			best_off = off
+
+	# Refine: binary-search between the two neighbors of the best sample
+	var refine_lo := best_off - step
+	var refine_hi := best_off + step
+	for _r in range(LOCAL_REFINE_STEPS):
+		var mid_a := (refine_lo + refine_hi) * 0.5 - (refine_hi - refine_lo) * 0.125
+		var mid_b := (refine_lo + refine_hi) * 0.5 + (refine_hi - refine_lo) * 0.125
+		# Wrap
+		var off_a := fmod(mid_a + curve_len, curve_len)
+		var off_b := fmod(mid_b + curve_len, curve_len)
+		var pt_a := curve.sample_baked(off_a)
+		var pt_b := curve.sample_baked(off_b)
+		var dsq_a := (pt_a.x - pos.x) * (pt_a.x - pos.x) + (pt_a.y - pos.y) * (pt_a.y - pos.y)
+		var dsq_b := (pt_b.x - pos.x) * (pt_b.x - pos.x) + (pt_b.y - pos.y) * (pt_b.y - pos.y)
+		if dsq_a < dsq_b:
+			refine_hi = mid_b
+			if dsq_a < best_dsq:
+				best_dsq = dsq_a
+				best_off = off_a
+		else:
+			refine_lo = mid_a
+			if dsq_b < best_dsq:
+				best_dsq = dsq_b
+				best_off = off_b
+
+	# Safety fallback: if the local search found something too far, do a full search
+	if best_dsq > LOCAL_FALLBACK_DIST * LOCAL_FALLBACK_DIST:
+		return curve.get_closest_offset(pos)
+
+	return best_off
+
+
 func _constrain_to_road() -> void:
 	var curve          = track_path.curve
-	var closest_offset = curve.get_closest_offset(player.position)
+	var closest_offset = _local_closest_offset(curve, player.position, player.track_progress)
 	var closest_pt     = curve.sample_baked(closest_offset)
 	var dist           = player.position.distance_to(closest_pt)
 	# Sync player.track_progress to curve offset so it's on the same scale as AI.progress
