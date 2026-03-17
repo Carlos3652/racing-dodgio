@@ -39,11 +39,20 @@ def test_ready_calls_record_race_once(src):
     assert "_record_race_once()" in body
 
 
-# ── 3. _record_race_once() has _race_recorded guard ──────
+# ── 3. _record_race_once() has _result_saved guard ───────
 
 def test_record_race_once_has_guard(src):
     body = _extract_func_body(src, "_record_race_once()")
-    assert "_race_recorded" in body
+    assert "_result_saved" in body, \
+        "_record_race_once() must use _result_saved guard (not _race_recorded)"
+
+
+# ── 3b. _record_race_once() does NOT touch _race_recorded ─
+
+def test_record_race_once_does_not_touch_race_recorded(src):
+    body = _extract_func_body(src, "_record_race_once()")
+    assert "_race_recorded" not in body, \
+        "_record_race_once() must NOT reference _race_recorded — that flag is for button handlers only"
 
 
 # ── 4. _record_race_once() calls Records.record_race ─────

@@ -7,7 +7,7 @@ extends EditorScript
 ## Validates that:
 ##   1. record_race() has been moved OUT of _build_results()
 ##   2. _record_race_once() exists and is called in _ready()
-##   3. _record_race_once() uses the _race_recorded guard
+##   3. _record_race_once() uses the _result_saved guard (not _race_recorded)
 ##   4. _build_results() no longer calls Records.record_race()
 ##   5. _get_player_position() helper exists
 ##   6. _is_pb and _prev_best instance vars are declared
@@ -48,15 +48,20 @@ func _run() -> void:
 		print("  ✗ FAIL: Could not locate _ready() function body")
 		issues += 1
 
-	# ── 4. _record_race_once() uses _race_recorded guard ──
+	# ── 4. _record_race_once() uses _result_saved guard (NOT _race_recorded) ──
 	var guard_start := src.find("func _record_race_once()")
 	var guard_end := src.find("\nfunc ", guard_start + 1) if guard_start >= 0 else -1
 	if guard_start >= 0 and guard_end >= 0:
 		var guard_body := src.substr(guard_start, guard_end - guard_start)
-		if guard_body.find("_race_recorded") >= 0:
-			print("  ✓  _record_race_once() checks _race_recorded guard")
+		if guard_body.find("_result_saved") >= 0:
+			print("  ✓  _record_race_once() checks _result_saved guard")
 		else:
-			print("  ✗ FAIL: _record_race_once() missing _race_recorded guard")
+			print("  ✗ FAIL: _record_race_once() missing _result_saved guard")
+			issues += 1
+		if guard_body.find("_race_recorded") < 0:
+			print("  ✓  _record_race_once() does NOT touch _race_recorded (button-only flag)")
+		else:
+			print("  ✗ FAIL: _record_race_once() must NOT set _race_recorded — it breaks button handlers!")
 			issues += 1
 		if guard_body.find("Records.record_race(") >= 0:
 			print("  ✓  _record_race_once() calls Records.record_race()")
@@ -65,7 +70,7 @@ func _run() -> void:
 			issues += 1
 	else:
 		print("  ✗ FAIL: Could not locate _record_race_once() body")
-		issues += 2
+		issues += 3
 
 	# ── 5. _build_results() does NOT call Records.record_race ──
 	var build_start := src.find("func _build_results()")
@@ -123,7 +128,7 @@ func _run() -> void:
 	# ── Summary ─────────────────────────────────────────────
 	print("\n══════════════════════════════════════════════════")
 	if issues == 0:
-		print("  ALL CHECKS PASSED (%d assertions)" % 10)
+		print("  ALL CHECKS PASSED (%d assertions)" % 11)
 	else:
 		print("  %d ISSUE(S) FOUND" % issues)
 	print("══════════════════════════════════════════════════\n")

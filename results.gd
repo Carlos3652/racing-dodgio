@@ -24,9 +24,10 @@ var phase: Phase = Phase.FLASH
 var _skipped: bool = false
 var _results_built: bool = false
 var _tweens: Array = []  # tracked tweens for safe cleanup
-var _race_recorded: bool = false  # guard against double-record
-var _is_pb: bool = false          # cached PB result from recording
-var _prev_best: float = INF       # cached previous best time
+var _result_saved: bool = false    # guard against double-record (set in _ready)
+var _race_recorded: bool = false   # button-handler guard: circuit recording + nav lock
+var _is_pb: bool = false           # cached PB result from recording
+var _prev_best: float = INF        # cached previous best time
 
 # Node refs built during cinematic
 var flash_rect: ColorRect
@@ -56,12 +57,14 @@ func _ready() -> void:
 
 
 ## Record the player's race result to persistent storage.
-## Called once in _ready(); the guard prevents any duplicate writes
-## even if this function were somehow invoked again.
+## Called once in _ready(); the _result_saved guard prevents any duplicate
+## writes even if this function were somehow invoked again.
+## NOTE: This is separate from _race_recorded, which is used exclusively
+## by the button handlers for circuit-race recording and navigation locking.
 func _record_race_once() -> void:
-	if _race_recorded:
+	if _result_saved:
 		return
-	_race_recorded = true
+	_result_saved = true
 
 	var order = GameData.finish_order
 	var stats = GameData.race_stats
