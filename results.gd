@@ -24,7 +24,10 @@ var phase: Phase = Phase.FLASH
 var _skipped: bool = false
 var _results_built: bool = false
 var _tweens: Array = []  # tracked tweens for safe cleanup
-var _race_recorded: bool = false  # guard against double-click recording
+var _result_saved: bool = false    # guard against double-record (set in _ready)
+var _race_recorded: bool = false   # button-handler guard: circuit recording + nav lock
+var _is_pb: bool = false           # cached PB result from recording
+var _prev_best: float = INF        # cached previous best time
 
 # Node refs built during cinematic
 var flash_rect: ColorRect
@@ -41,6 +44,9 @@ func _tracked_tween() -> Tween:
 
 
 func _ready() -> void:
+	# Record the race result exactly once on scene load (before any UI build)
+	_record_race_once()
+
 	# Hide the static results content initially — reveal in Phase 3
 	$Title.modulate.a = 0.0
 	$Subtitle.modulate.a = 0.0
@@ -48,6 +54,45 @@ func _ready() -> void:
 	$ButtonRow.modulate.a = 0.0
 
 	_start_phase_flash()
+
+
+## Record the player's race result to persistent storage.
+## Called once in _ready(); the _result_saved guard prevents any duplicate
+## writes even if this function were somehow invoked again.
+## NOTE: This is separate from _race_recorded, which is used exclusively
+## by the button handlers for circuit-race recording and navigation locking.
+func _record_race_once() -> void:
+	if _result_saved:
+		return
+	_result_saved = true
+
+	var order = GameData.finish_order
+	var stats = GameData.race_stats
+	var track_name = GameData.TRACKS[GameData.current_track_index].name \
+		if GameData.current_track_index < GameData.TRACKS.size() else "Unknown"
+
+	# Find the player's finishing data
+	var player_time := 0.0
+	for i in range(order.size()):
+		if order[i].name == "You":
+			player_time = order[i].time
+			break
+	var stars_collected: int = stats.get("stars", 0) if not stats.is_empty() else 0
+
+	# Read previous best BEFORE recording (so UI can show the old value)
+	_prev_best = Records.get_best_time(track_name)
+
+	# Only record if player actually raced (time > 0)
+	if player_time > 0.0:
+		_is_pb = Records.record_race(track_name, _get_player_position(order), player_time, stars_collected)
+
+
+## Return 1-based finishing position of the player, or 6 if not found.
+func _get_player_position(order: Array) -> int:
+	for i in range(order.size()):
+		if order[i].name == "You":
+			return i + 1
+	return 6
 
 
 # ── Skip: ENTER/SPACE jumps to results ───────────────────────────────────
@@ -399,24 +444,8 @@ func _build_results() -> void:
 	else:
 		$Subtitle.text = track_name + diff_label
 
-	# ── Save personal best records ────────────────────────────────────────
-	var player_pos = 6
-	var player_time = 0.0
-	for i in range(order.size()):
-		if order[i].name == "You":
-			player_pos = i + 1
-			player_time = order[i].time
-			break
-	var stars_collected = stats.get("stars", 0) if not stats.is_empty() else 0
-
-	# Read previous best BEFORE recording (so it reflects the old value)
-	var prev_best = Records.get_best_time(track_name)
-
-	# Only record if player actually raced (time > 0)
-	var is_pb = false
-	if player_time > 0.0:
-		is_pb = Records.record_race(track_name, player_pos, player_time, stars_collected)
-	if is_pb:
+	# ── Personal best display (recording already done in _ready) ─────────
+	if _is_pb:
 		right_col.add_child(_make_stat_row("", ""))  # spacer
 		var pb_lbl = Label.new()
 		pb_lbl.text = "PERSONAL BEST!"
@@ -430,8 +459,8 @@ func _build_results() -> void:
 		pb_tw.tween_property(pb_lbl, "modulate:a", 1.0, 0.4)
 
 	# Show previous best time if available
-	if prev_best < INF:
-		right_col.add_child(_make_stat_row("Best Time", _fmt_time(prev_best)))
+	if _prev_best < INF:
+		right_col.add_child(_make_stat_row("Best Time", _fmt_time(_prev_best)))
 
 	# ── Style buttons ─────────────────────────────────────────────────────
 	_style_button($ButtonRow/RaceAgainButton, true)
