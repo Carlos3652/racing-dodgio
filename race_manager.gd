@@ -119,8 +119,8 @@ var camera:        Camera2D
 var _zoom_tween:   Tween = null
 var _boost_was_active: bool = false
 var minimap:       Control
-var crash_audio:   AudioStreamPlayer
-var bump_audio:    AudioStreamPlayer
+var crash_sfx:     AudioStreamPlayer
+var bump_sfx:      AudioStreamPlayer
 var cd_beep_sfx:   AudioStreamPlayer
 var cd_go_sfx:     AudioStreamPlayer
 
@@ -150,7 +150,6 @@ func _ready() -> void:
 	_build_track_path()
 	_place_obstacles()
 	_setup_hud_refs()
-	_setup_audio()
 	_setup_minimap()
 	_setup_griddy()
 
@@ -712,13 +711,6 @@ func _place_obstacles() -> void:
 # ---------------------------------------------------------------------------
 # HUD setup
 # ---------------------------------------------------------------------------
-func _setup_audio() -> void:
-	crash_audio = $CrashAudio as AudioStreamPlayer
-	bump_audio  = $BumpAudio  as AudioStreamPlayer
-	cd_beep_sfx = $CountdownBeepAudio as AudioStreamPlayer
-	cd_go_sfx   = $CountdownGoAudio   as AudioStreamPlayer
-
-
 func _setup_hud_refs() -> void:
 	hud_place_numeral = $HUD/StatPanel/StatVBox/PositionRow/PlaceNumeral
 	hud_place_suffix  = $HUD/StatPanel/StatVBox/PositionRow/PlaceSuffix
@@ -751,6 +743,10 @@ func _setup_hud_refs() -> void:
 	esc_dialog        = $HUD/EscDialog
 	esc_yes_btn       = $HUD/EscDialog/EscPanel/EscVBox/EscBtnRow/EscYesBtn
 	esc_no_btn        = $HUD/EscDialog/EscPanel/EscVBox/EscBtnRow/EscNoBtn
+	crash_sfx         = $CrashSFX
+	bump_sfx          = $BumpSFX
+	cd_beep_sfx       = $CountdownBeepSFX
+	cd_go_sfx         = $CountdownGoSFX
 
 	# Apply bar background styles
 	boost_bar.add_theme_stylebox_override("background", _bar_bg_style)
@@ -1033,6 +1029,7 @@ func _check_player_collisions() -> void:
 				if dist < 65 and player.crash_time <= 0:
 					player.apply_crash()
 					_flash_screen()
+					crash_sfx.play()
 					_hide_pickup(child, jeep_timers, JEEP_RESPAWN_SEC)
 					_stat_stuns += 1
 				elif dist >= 65 and dist < 90 and player.crash_time <= 0 and _close_call_cooldown <= 0:
@@ -1110,8 +1107,8 @@ func _check_car_bumps(delta: float) -> void:
 
 
 func _flash_bump(pos: Vector2) -> void:
-	if bump_audio and not bump_audio.playing:
-		bump_audio.play()
+	if bump_sfx and not bump_sfx.playing:
+		bump_sfx.play()
 	var lbl = Label.new()
 	lbl.text = "BUMP!"
 	lbl.add_theme_font_size_override("font_size", 22)
@@ -1217,8 +1214,8 @@ func _constrain_to_road() -> void:
 
 
 func _flash_screen() -> void:
-	if crash_audio and not crash_audio.playing:
-		crash_audio.play()
+	if crash_sfx and not crash_sfx.playing:
+		crash_sfx.play()
 	crash_label.visible    = true
 	crash_label.modulate.a = 1.0
 	_do_camera_shake()
