@@ -15,6 +15,11 @@ const SPEEDUP_INTERVAL = 10.0
 const SPEEDUP_AMOUNT   = 15.0
 var SPEEDUP_CAP: float  = 380.0
 
+# --- Rubber-band catch-up / pullback ---
+@export var CATCHUP_BONUS: float = 25.0
+@export var PULLBACK_PENALTY: float = 15.0
+var player_ref: Node2D = null
+
 var speed: float = BASE_SPEED
 var is_racing: bool = false
 var has_finished: bool = false
