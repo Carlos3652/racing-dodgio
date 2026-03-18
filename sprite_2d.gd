@@ -52,4 +52,6 @@ func _process(delta: float) -> void:
 
 func _on_griddy_finished(anim_name: String):
 	if anim_name == "griddy":
-		$"../GriddyKid".frame = 0
+		var gk = $"../GriddyKid"
+		if "frame" in gk:
+			gk.set("frame", 0)
