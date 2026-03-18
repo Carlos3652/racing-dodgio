@@ -1,6 +1,9 @@
 """
 Verify that _setup_griddy() no longer uses await (making _ready a coroutine)
 and that griddy_kid.frame is guarded by a type check via _set_griddy_frame().
+
+Updated for rd-crit-05-style: _griddy_defer_frames replaced with CONNECT_ONE_SHOT,
+_on_griddy_layout_tick replaced with _on_griddy_layout_first_frame / _on_griddy_layout_ready.
 """
 import pathlib, re, pytest
 
@@ -46,40 +49,54 @@ def test_setup_griddy_uses_signal_callback(src):
         "_setup_griddy() must connect to process_frame signal for deferred layout"
 
 
-# ── 3. _on_griddy_layout_tick exists and disconnects ─────────────────
+# ── 3. _setup_griddy uses CONNECT_ONE_SHOT ───────────────────────────
 
-def test_griddy_layout_tick_exists(src):
-    assert "func _on_griddy_layout_tick()" in src
-
-def test_griddy_layout_tick_disconnects(src):
-    body = _extract_func_body(src, "_on_griddy_layout_tick()")
-    assert "process_frame.disconnect(" in body, \
-        "_on_griddy_layout_tick must disconnect itself after completing"
+def test_setup_griddy_uses_one_shot(src):
+    """_setup_griddy must use CONNECT_ONE_SHOT instead of a manual counter."""
+    body = _extract_func_body(src, "_setup_griddy()")
+    assert "CONNECT_ONE_SHOT" in body, \
+        "_setup_griddy() must use CONNECT_ONE_SHOT for deferred frame callback"
 
 
-# ── 4. _on_griddy_layout_tick has is_inside_tree guard ───────────────
+# ── 4. _on_griddy_layout_first_frame exists and chains to ready ──────
 
-def test_griddy_layout_tick_tree_guard(src):
-    body = _extract_func_body(src, "_on_griddy_layout_tick()")
+def test_griddy_layout_first_frame_exists(src):
+    assert "func _on_griddy_layout_first_frame()" in src
+
+def test_griddy_layout_first_frame_chains(src):
+    body = _extract_func_body(src, "_on_griddy_layout_first_frame()")
+    assert "_on_griddy_layout_ready" in body, \
+        "_on_griddy_layout_first_frame must chain to _on_griddy_layout_ready"
+    assert "CONNECT_ONE_SHOT" in body, \
+        "_on_griddy_layout_first_frame must use CONNECT_ONE_SHOT"
+
+
+# ── 5. _on_griddy_layout_ready has is_inside_tree guard ──────────────
+
+def test_griddy_layout_ready_exists(src):
+    assert "func _on_griddy_layout_ready()" in src
+
+def test_griddy_layout_ready_tree_guard(src):
+    body = _extract_func_body(src, "_on_griddy_layout_ready()")
     assert "is_inside_tree()" in body, \
-        "_on_griddy_layout_tick must check is_inside_tree before accessing scene"
+        "_on_griddy_layout_ready must check is_inside_tree before accessing scene"
 
 
-# ── 5. _on_griddy_layout_tick calls _show_intro ─────────────────────
+# ── 6. _on_griddy_layout_ready calls _show_intro ─────────────────────
 
-def test_griddy_layout_tick_calls_show_intro(src):
-    body = _extract_func_body(src, "_on_griddy_layout_tick()")
+def test_griddy_layout_ready_calls_show_intro(src):
+    body = _extract_func_body(src, "_on_griddy_layout_ready()")
     assert "_show_intro()" in body, \
-        "_on_griddy_layout_tick must call _show_intro after positioning"
+        "_on_griddy_layout_ready must call _show_intro after positioning"
 
 
-# ── 6. _set_griddy_frame helper exists ───────────────────────────────
+# ── 7. _set_griddy_frame helper exists ───────────────────────────────
 
 def test_set_griddy_frame_exists(src):
     assert "func _set_griddy_frame(" in src
 
 
-# ── 7. _set_griddy_frame checks AnimatedSprite2D or Sprite2D ────────
+# ── 8. _set_griddy_frame checks AnimatedSprite2D or Sprite2D ────────
 
 def test_set_griddy_frame_type_check(src):
     body = _extract_func_body(src, "_set_griddy_frame(")
@@ -89,7 +106,7 @@ def test_set_griddy_frame_type_check(src):
         "_set_griddy_frame must check for Sprite2D"
 
 
-# ── 8. _set_griddy_frame warns on wrong type ────────────────────────
+# ── 9. _set_griddy_frame warns on wrong type ────────────────────────
 
 def test_set_griddy_frame_warns(src):
     body = _extract_func_body(src, "_set_griddy_frame(")
@@ -97,11 +114,21 @@ def test_set_griddy_frame_warns(src):
         "_set_griddy_frame must push_warning when type is unexpected"
 
 
-# ── 9. No direct griddy_kid.frame assignment remains ────────────────
+# ── 10. _set_griddy_frame handles null griddy_kid ────────────────────
+
+def test_set_griddy_frame_null_guard(src):
+    """_set_griddy_frame must handle null griddy_kid with a comment and warning."""
+    body = _extract_func_body(src, "_set_griddy_frame(")
+    assert "griddy_kid == null" in body or "griddy_kid==null" in body, \
+        "_set_griddy_frame must check for null griddy_kid"
+    assert "push_warning" in body, \
+        "_set_griddy_frame must push_warning when griddy_kid is null"
+
+
+# ── 11. No direct griddy_kid.frame assignment remains ────────────────
 
 def test_no_direct_frame_assignment(src):
     """All .frame assignments must go through _set_griddy_frame."""
-    # Find all griddy_kid.frame = assignments outside _set_griddy_frame
     set_frame_body = _extract_func_body(src, "_set_griddy_frame(")
     src_without_helper = src.replace(set_frame_body, "")
     matches = re.findall(r"griddy_kid\.frame\s*=", src_without_helper)
@@ -109,28 +136,29 @@ def test_no_direct_frame_assignment(src):
         f"Found {len(matches)} direct griddy_kid.frame assignment(s) outside _set_griddy_frame"
 
 
-# ── 10. _setup_griddy calls _set_griddy_frame ───────────────────────
+# ── 12. _setup_griddy calls _set_griddy_frame ───────────────────────
 
 def test_setup_griddy_calls_helper(src):
     body = _extract_func_body(src, "_setup_griddy()")
     assert "_set_griddy_frame(" in body
 
 
-# ── 11. _on_griddy_finished calls _set_griddy_frame ─────────────────
+# ── 13. _on_griddy_finished calls _set_griddy_frame ─────────────────
 
 def test_on_griddy_finished_calls_helper(src):
     body = _extract_func_body(src, "_on_griddy_finished(")
     assert "_set_griddy_frame(" in body
 
 
-# ── 12. _griddy_defer_frames is declared ─────────────────────────────
+# ── 14. _griddy_defer_frames instance variable removed ───────────────
 
-def test_griddy_defer_frames_declared(src):
-    assert re.search(r"^var _griddy_defer_frames", src, re.MULTILINE), \
-        "_griddy_defer_frames must be declared as instance variable"
+def test_no_griddy_defer_frames_variable(src):
+    """_griddy_defer_frames should be removed — CONNECT_ONE_SHOT replaces it."""
+    assert not re.search(r"^var _griddy_defer_frames", src, re.MULTILINE), \
+        "_griddy_defer_frames instance variable should be removed"
 
 
-# ── 13. _ready does NOT contain await ────────────────────────────────
+# ── 15. _ready does NOT contain await ────────────────────────────────
 
 def test_ready_not_coroutine(src):
     """_ready must remain synchronous (no await)."""
