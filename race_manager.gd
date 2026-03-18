@@ -82,6 +82,7 @@ var hype_bar:          ProgressBar
 var hype_label:        Label
 var griddy_kid:        Node2D
 var griddy_anim:       AnimationPlayer
+var _griddy_defer_frames: int = 0
 
 var last_digit_shown: int = -1
 var hype_timer:       float = 0.0
@@ -791,39 +792,37 @@ func _setup_minimap() -> void:
 func _setup_griddy() -> void:
 	griddy_kid  = $HUD/GriddyKid
 	griddy_anim = $HUD/GriddyKid/AnimationPlayer
-	_reset_griddy_frame()
+	_set_griddy_frame(0)
 	griddy_anim.animation_finished.connect(_on_griddy_finished)
 
-	# Wait two frames for layout to settle, then read GriddyFrame position.
-	# Uses one-shot signal callbacks instead of await so _setup_griddy (and
-	# therefore _ready) never becomes a coroutine.
-	get_tree().process_frame.connect(_griddy_layout_step.bind(1), CONNECT_ONE_SHOT)
+	# Wait 2 frames for layout to settle before reading GriddyFrame position.
+	# Uses a signal callback so _ready stays synchronous.
+	_griddy_defer_frames = 2
+	get_tree().process_frame.connect(_on_griddy_layout_tick)
 
 
-## Deferred layout helper — counts down [remaining] frames then positions the
-## griddy kid inside the GriddyFrame rect and kicks off the intro sequence.
-func _griddy_layout_step(remaining: int) -> void:
-	if not is_inside_tree():
+func _on_griddy_layout_tick() -> void:
+	_griddy_defer_frames -= 1
+	if _griddy_defer_frames > 0:
 		return
-	if remaining > 0:
-		get_tree().process_frame.connect(
-			_griddy_layout_step.bind(remaining - 1), CONNECT_ONE_SHOT)
+	get_tree().process_frame.disconnect(_on_griddy_layout_tick)
+	if not is_inside_tree():
 		return
 	var frame_rect = $HUD/StandPanel/StandVBox/GriddyFrame.get_global_rect()
 	griddy_kid.position = frame_rect.get_center()
 	_show_intro()
 
 
-## Type-safe frame reset — works for AnimatedSprite2D, Sprite2D, or any node
-## whose script exposes a "frame" property (e.g. griddy_figure.gd).
-func _reset_griddy_frame() -> void:
-	if griddy_kid and "frame" in griddy_kid:
-		griddy_kid.set("frame", 0)
+func _set_griddy_frame(f: int) -> void:
+	if griddy_kid is AnimatedSprite2D or griddy_kid is Sprite2D:
+		griddy_kid.frame = f
+	elif griddy_kid != null:
+		push_warning("griddy_kid is %s, expected AnimatedSprite2D or Sprite2D" % griddy_kid.get_class())
 
 
 func _on_griddy_finished(anim_name: String) -> void:
 	if anim_name == "griddy":
-		_reset_griddy_frame()
+		_set_griddy_frame(0)
 
 
 # ---------------------------------------------------------------------------
