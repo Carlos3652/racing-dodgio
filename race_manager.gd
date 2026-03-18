@@ -1466,13 +1466,29 @@ func _do_camera_shake() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Star collect particle burst effect
+# Star sparkle on cookie collect – particle burst + floating label
 # ---------------------------------------------------------------------------
+const _CollectBurst = preload("res://collect_burst.gd")
+
 func _sparkle_at(pos: Vector2) -> void:
+	# Particle burst effect
 	var burst = _CollectBurst.new()
 	burst.position = pos
 	burst.z_index  = 20
 	add_child(burst)
+
+	# Floating "BOOST!" label
+	var lbl = Label.new()
+	lbl.text = "* BOOST! *"
+	lbl.add_theme_font_size_override("font_size", 26)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.1, 1))
+	lbl.position = pos + Vector2(-52, -24)
+	lbl.z_index  = 20
+	add_child(lbl)
+	var tw = create_tween()
+	tw.tween_property(lbl, "position:y", lbl.position.y - 50, 0.6)
+	tw.parallel().tween_property(lbl, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func(): lbl.queue_free())
 
 
 func _sparkle_close_call(pos: Vector2) -> void:
