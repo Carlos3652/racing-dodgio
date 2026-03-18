@@ -144,6 +144,8 @@ func apply_crash() -> void:
 		return
 	speed = 0.0
 	boost_time = 0.0
+	drift_time = 0.0
+	is_drifting = false
 	crash_time = STUN_DURATION
 
 
