@@ -42,11 +42,6 @@ var personality: Dictionary = {}
 var bump_radius_bonus: float = 0.0  # added to base bump_dist for "blocker" types
 var ai_boost_duration: float = 5.0  # can be shortened for "phantom"
 
-# Rubber-band catch-up / pullback
-@export var CATCHUP_BONUS: float = 25.0
-@export var PULLBACK_PENALTY: float = 15.0
-var player_ref: Node2D = null
-
 # "Mind of their own" fields
 var noise_speed: float = 0.0
 var noise_timer: float = 0.0
