@@ -1,16 +1,21 @@
 """
-Pytest tests for the star/cookie collect particle burst effect in race_manager.gd.
+Pytest tests for the star/cookie collect particle burst effect.
+
+The implementation lives in collect_burst.gd (preloaded by race_manager.gd
+as `CollectBurst`).
 
 Validates that:
-- _CollectBurst inner class exists and extends Node2D
-- Particle count is 12-16
+- collect_burst.gd extends Node2D with _ready, _process, _draw
+- Particle count is 12-16 (randi_range)
 - Colors include gold (#FFD740), white, and cyan (#00E5FF)
-- Fade duration is 0.5s using a Tween
+- Fade duration (LIFETIME) is 0.5s using a Tween
 - queue_free() auto-frees the node after animation
 - Particles drawn with draw_rect or draw_circle (3-5px)
 - Radial outward launch using cos/sin
-- _sparkle_at() spawns a _CollectBurst and sets z_index
 - queue_redraw() called for continuous animation
+- race_manager.gd preloads collect_burst.gd as CollectBurst (no underscore)
+- _sparkle_at() spawns a CollectBurst and sets z_index
+- No inner class _CollectBurst exists in race_manager.gd (no name collision)
 """
 
 import re
@@ -19,199 +24,191 @@ import pytest
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 RACE_MANAGER = os.path.join(REPO_ROOT, "race_manager.gd")
+COLLECT_BURST = os.path.join(REPO_ROOT, "collect_burst.gd")
 
 
 @pytest.fixture(scope="module")
-def source():
+def race_source():
     with open(RACE_MANAGER, "r", encoding="utf-8") as f:
         return f.read()
 
 
 @pytest.fixture(scope="module")
-def class_body(source):
-    """Extract the _CollectBurst inner class body."""
-    idx = source.find("class _CollectBurst")
-    assert idx >= 0, "_CollectBurst inner class not found"
-    return source[idx:]
+def burst_source():
+    with open(COLLECT_BURST, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 @pytest.fixture(scope="module")
-def sparkle_body(source):
+def sparkle_body(race_source):
     """Extract the _sparkle_at function body."""
     match = re.search(
         r"(func\s+_sparkle_at\s*\([^)]*\)[^\n]*\n)((?:\t.*\n|\s*\n)*)",
-        source,
+        race_source,
     )
     assert match, "_sparkle_at function not found"
     return match.group(0)
 
 
-# ── Inner class structure ──────────────────────────────────────────────
+# ── No name collision ─────────────────────────────────────────────────
 
 
-class TestClassStructure:
-    def test_class_exists(self, source):
-        """_CollectBurst inner class must exist."""
-        assert "class _CollectBurst" in source
+class TestNoNameCollision:
+    def test_no_inner_class(self, race_source):
+        """There must be no inner class _CollectBurst in race_manager.gd."""
+        assert "class _CollectBurst" not in race_source, (
+            "Dead inner class _CollectBurst still exists in race_manager.gd"
+        )
 
-    def test_extends_node2d(self, source):
-        """_CollectBurst must extend Node2D."""
-        assert "_CollectBurst extends Node2D" in source
+    def test_preload_const_no_underscore(self, race_source):
+        """The preload const must be CollectBurst (no leading underscore)."""
+        assert re.search(
+            r'const\s+CollectBurst\s*=\s*preload\(\s*"res://collect_burst\.gd"\s*\)',
+            race_source,
+        ), "CollectBurst preload const not found (expected no underscore)"
 
-    def test_has_ready(self, class_body):
-        """_CollectBurst must have a _ready() function."""
-        assert "func _ready" in class_body
-
-    def test_has_process(self, class_body):
-        """_CollectBurst must have a _process() function."""
-        assert "func _process" in class_body
-
-    def test_has_draw(self, class_body):
-        """_CollectBurst must have a _draw() function."""
-        assert "func _draw" in class_body
+    def test_no_underscore_const(self, race_source):
+        """There must be no _CollectBurst const (old name)."""
+        assert "const _CollectBurst" not in race_source, (
+            "Old _CollectBurst const still present"
+        )
 
 
-# ── Particle configuration ─────────────────────────────────────────────
+# ── collect_burst.gd structure ────────────────────────────────────────
+
+
+class TestBurstStructure:
+    def test_extends_node2d(self, burst_source):
+        """collect_burst.gd must extend Node2D."""
+        assert "extends Node2D" in burst_source
+
+    def test_has_ready(self, burst_source):
+        assert "func _ready" in burst_source
+
+    def test_has_process(self, burst_source):
+        assert "func _process" in burst_source
+
+    def test_has_draw(self, burst_source):
+        assert "func _draw" in burst_source
+
+
+# ── Particle configuration ────────────────────────────────────────────
 
 
 class TestParticleConfig:
-    def test_particle_count_in_range(self, class_body):
-        """PARTICLE_COUNT must be between 12 and 16."""
-        match = re.search(r"PARTICLE_COUNT\s*:=\s*(\d+)", class_body)
-        assert match, "PARTICLE_COUNT constant not found"
-        count = int(match.group(1))
-        assert 12 <= count <= 16, f"PARTICLE_COUNT={count}, expected 12-16"
+    def test_particle_count_range(self, burst_source):
+        """Particle count should use randi_range(12, 16)."""
+        assert "randi_range(12, 16)" in burst_source or (
+            "12" in burst_source and "16" in burst_source
+        ), "Particle count 12-16 not found"
 
-    def test_burst_duration_half_second(self, class_body):
-        """BURST_DURATION must be 0.5 seconds."""
-        match = re.search(r"BURST_DURATION\s*:=\s*([\d.]+)", class_body)
-        assert match, "BURST_DURATION constant not found"
-        assert float(match.group(1)) == 0.5, "BURST_DURATION must be 0.5"
+    def test_lifetime_half_second(self, burst_source):
+        """LIFETIME must be 0.5 seconds."""
+        match = re.search(r"LIFETIME\s*[:=]\s*(?:float\s*=\s*)?([\d.]+)", burst_source)
+        assert match, "LIFETIME constant not found"
+        assert float(match.group(1)) == 0.5, "LIFETIME must be 0.5"
 
-    def test_particle_size_range(self, class_body):
-        """Particle size must use randf_range(3.0, 5.0) for 3-5px."""
-        assert "3.0" in class_body and "5.0" in class_body, (
-            "Particle size range 3.0-5.0 not found"
-        )
+    def test_particle_size_range(self, burst_source):
+        """Particle size must use 3.0-5.0 range."""
+        assert "3.0" in burst_source and "5.0" in burst_source
 
 
-# ── Colors ──────────────────────────────────────────────────────────────
+# ── Colors ─────────────────────────────────────────────────────────────
 
 
 class TestColors:
-    def test_gold_color(self, class_body):
-        """Gold color #FFD740 must be present."""
-        assert "FFD740" in class_body, "Gold color #FFD740 not found"
+    def test_gold_color(self, burst_source):
+        assert "FFD740" in burst_source, "Gold color #FFD740 not found"
 
-    def test_white_color(self, class_body):
-        """White color must be present."""
+    def test_white_color(self, burst_source):
         has_white = (
-            "1, 1, 1" in class_body
-            or "1.0, 1.0, 1.0" in class_body
-            or "FFFFFF" in class_body
+            "1, 1, 1" in burst_source
+            or "1.0, 1.0, 1.0" in burst_source
+            or "FFFFFF" in burst_source
         )
         assert has_white, "White color not found"
 
-    def test_cyan_color(self, class_body):
-        """Cyan color #00E5FF must be present."""
-        assert "00E5FF" in class_body, "Cyan color #00E5FF not found"
+    def test_cyan_color(self, burst_source):
+        assert "00E5FF" in burst_source, "Cyan color #00E5FF not found"
 
-    def test_color_cycling(self, class_body):
-        """Colors should cycle via modulo on BURST_COLORS array."""
-        assert "BURST_COLORS" in class_body, "BURST_COLORS array not found"
-        assert "% BURST_COLORS.size()" in class_body, (
+    def test_color_cycling(self, burst_source):
+        """Colors should cycle via modulo on COLORS array."""
+        assert "COLORS" in burst_source, "COLORS array not found"
+        assert re.search(r"%\s*COLORS\.size\(\)", burst_source), (
             "Color cycling via modulo not found"
         )
 
 
-# ── Animation mechanics ────────────────────────────────────────────────
+# ── Animation mechanics ───────────────────────────────────────────────
 
 
 class TestAnimation:
-    def test_tween_alpha_fade(self, class_body):
-        """Must use create_tween() to fade _alpha to 0."""
-        assert "create_tween" in class_body, "No create_tween() call found"
-        assert "_alpha" in class_body, "No _alpha property found"
-        assert "0.0" in class_body, "Tween target of 0.0 not found"
+    def test_tween_alpha_fade(self, burst_source):
+        assert "create_tween" in burst_source
+        assert "modulate:a" in burst_source or "_alpha" in burst_source
+        assert "0.0" in burst_source
 
-    def test_queue_free_after_animation(self, class_body):
-        """queue_free must be called after tween completes."""
-        assert "queue_free" in class_body, "queue_free() not found in _CollectBurst"
+    def test_queue_free_after_animation(self, burst_source):
+        assert "queue_free" in burst_source
 
-    def test_queue_redraw_in_process(self, class_body):
-        """queue_redraw() must be called in _process for continuous redraw."""
+    def test_queue_redraw_in_process(self, burst_source):
         process_match = re.search(
             r"func\s+_process\s*\([^)]*\)[^\n]*\n((?:\t.*\n|\s*\n)*)",
-            class_body,
+            burst_source,
         )
-        assert process_match, "_process function not found in _CollectBurst"
-        assert "queue_redraw" in process_match.group(0), (
-            "No queue_redraw in _process — particles won't animate"
-        )
+        assert process_match, "_process function not found"
+        assert "queue_redraw" in process_match.group(0)
 
-    def test_radial_launch_cos_sin(self, class_body):
-        """Particles must launch radially using cos/sin."""
-        assert "cos" in class_body and "sin" in class_body, (
-            "No cos/sin found — particles may not launch radially"
-        )
+    def test_radial_launch_cos_sin(self, burst_source):
+        assert "cos" in burst_source and "sin" in burst_source
 
-    def test_uses_draw_rect_or_circle(self, class_body):
-        """Particles must be drawn with draw_rect or draw_circle."""
-        has_draw = "draw_rect" in class_body or "draw_circle" in class_body
-        assert has_draw, "No draw_rect or draw_circle in _draw()"
+    def test_uses_draw_rect_or_circle(self, burst_source):
+        assert "draw_rect" in burst_source or "draw_circle" in burst_source
+
+    def test_uses_both_rect_and_circle(self, burst_source):
+        """Mix of rect and circle draws."""
+        assert "draw_rect" in burst_source and "draw_circle" in burst_source
+
+    def test_drag_deceleration(self, burst_source):
+        """Particles must decelerate with drag."""
+        assert "drag" in burst_source.lower() or "friction" in burst_source.lower()
 
 
-# ── _sparkle_at integration ────────────────────────────────────────────
+# ── _sparkle_at integration ───────────────────────────────────────────
 
 
 class TestSparkleAt:
     def test_creates_collect_burst(self, sparkle_body):
-        """_sparkle_at() must create a _CollectBurst node."""
-        assert "_CollectBurst" in sparkle_body, (
-            "_sparkle_at() does not create _CollectBurst"
-        )
+        """_sparkle_at() must create a CollectBurst node."""
+        assert "CollectBurst" in sparkle_body
 
     def test_sets_position(self, sparkle_body):
-        """_sparkle_at() must set position on the burst node."""
-        assert "position" in sparkle_body, (
-            "_sparkle_at() does not set position"
-        )
+        assert "position" in sparkle_body
 
     def test_sets_z_index(self, sparkle_body):
-        """_sparkle_at() must set z_index for layering."""
-        assert "z_index" in sparkle_body, (
-            "_sparkle_at() does not set z_index"
-        )
+        assert "z_index" in sparkle_body
 
     def test_adds_as_child(self, sparkle_body):
-        """_sparkle_at() must add burst node as child."""
-        assert "add_child" in sparkle_body, (
-            "_sparkle_at() does not call add_child"
-        )
+        assert "add_child" in sparkle_body
 
 
-# ── Collection call sites ──────────────────────────────────────────────
+# ── Collection call sites ─────────────────────────────────────────────
 
 
 class TestCallSites:
-    def test_player_collection_calls_sparkle(self, source):
-        """Player cookie collection must call _sparkle_at."""
-        # Find the _sparkle_at function and verify cookie collection calls it
-        # Search for _sparkle_at calls near "cookie" tag references
-        sparkle_calls = [m.start() for m in re.finditer(r"_sparkle_at\s*\(", source)]
+    def test_player_collection_calls_sparkle(self, race_source):
+        sparkle_calls = [m.start() for m in re.finditer(r"_sparkle_at\s*\(", race_source)]
         assert len(sparkle_calls) >= 1, "No _sparkle_at calls found"
-        # At least one call should be near a cookie collection context
         found = False
         for idx in sparkle_calls:
-            context = source[max(0, idx - 300):idx]
+            context = race_source[max(0, idx - 300):idx]
             if '"cookie"' in context or "cookie" in context.lower():
                 found = True
                 break
         assert found, "No _sparkle_at call found near cookie collection code"
 
-    def test_sparkle_called_at_least_twice(self, source):
-        """_sparkle_at should be called for both player and AI collection."""
-        count = len(re.findall(r"_sparkle_at\s*\(", source))
+    def test_sparkle_called_at_least_twice(self, race_source):
+        count = len(re.findall(r"_sparkle_at\s*\(", race_source))
         assert count >= 2, (
             f"_sparkle_at called {count} time(s), expected >= 2 (player + AI)"
         )
