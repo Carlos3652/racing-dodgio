@@ -10,7 +10,7 @@ Validates that:
 - Colors include gold (#FFD740), white, and cyan (#00E5FF)
 - Fade duration (LIFETIME) is 0.5s using a Tween
 - queue_free() auto-frees the node after animation
-- Particles drawn with draw_rect or draw_circle (3-5px)
+- Particles drawn with draw_rect and/or draw_circle (3-5px)
 - Radial outward launch using cos/sin
 - queue_redraw() called for continuous animation
 - race_manager.gd preloads collect_burst.gd as CollectBurst (no underscore)
@@ -112,6 +112,12 @@ class TestParticleConfig:
         """Particle size must use 3.0-5.0 range."""
         assert "3.0" in burst_source and "5.0" in burst_source
 
+    def test_drag_deceleration(self, burst_source):
+        """Particles must have drag deceleration for natural slowdown."""
+        assert "drag" in burst_source.lower() or "friction" in burst_source.lower(), (
+            "No drag/friction deceleration found"
+        )
+
 
 # ── Colors ─────────────────────────────────────────────────────────────
 
@@ -169,9 +175,9 @@ class TestAnimation:
         """Mix of rect and circle draws."""
         assert "draw_rect" in burst_source and "draw_circle" in burst_source
 
-    def test_drag_deceleration(self, burst_source):
-        """Particles must decelerate with drag."""
-        assert "drag" in burst_source.lower() or "friction" in burst_source.lower()
+    def test_velocity_based_movement(self, burst_source):
+        """Particles should use velocity-based movement."""
+        assert "vel" in burst_source, "No velocity variable found for particles"
 
 
 # ── _sparkle_at integration ───────────────────────────────────────────
