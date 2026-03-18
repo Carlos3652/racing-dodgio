@@ -849,6 +849,8 @@ func _hide_countdown() -> void:
 # HUD update (called every racing frame)
 # ---------------------------------------------------------------------------
 func _update_hud(delta: float) -> void:
+	if not is_instance_valid(player):
+		return
 	var place = _get_player_place()
 	var sfx   = ["", "st", "nd", "rd", "th", "th"]
 	hud_place_numeral.text = str(place)
