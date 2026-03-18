@@ -182,3 +182,66 @@ class TestRaceManagerWiring:
         # flash_screen should be within ~200 chars of apply_crash
         assert flash_idx - crash_idx < 200, \
             "_flash_screen not called near apply_crash"
+
+    def test_crash_audio_overlap_guard(self, mgr_src):
+        """Verify crash audio has 'not crash_audio.playing' guard to prevent overlap."""
+        match = re.search(r"func _flash_screen[^:]*:.*?(?=\nfunc |\Z)", mgr_src, re.DOTALL)
+        assert match, "_flash_screen function not found"
+        body = match.group(0)
+        assert "not crash_audio.playing" in body, \
+            "crash_audio should check 'not crash_audio.playing' to prevent overlap"
+
+    def test_bump_audio_overlap_guard(self, mgr_src):
+        """Verify bump audio has 'not bump_audio.playing' guard to prevent overlap."""
+        match = re.search(r"func _flash_bump[^:]*:.*?(?=\nfunc |\Z)", mgr_src, re.DOTALL)
+        assert match, "_flash_bump function not found"
+        body = match.group(0)
+        assert "not bump_audio.playing" in body, \
+            "bump_audio should check 'not bump_audio.playing' to prevent overlap"
+
+
+# ── Audio volume & scene config ──────────────────────────────────────
+
+class TestAudioConfig:
+    def test_crash_audio_has_volume_db(self, tscn_src):
+        """CrashAudio node should have a volume_db setting."""
+        crash_section = tscn_src[tscn_src.index("CrashAudio"):]
+        # Find volume_db before next node
+        next_node = crash_section.find("[node", 1)
+        section = crash_section[:next_node] if next_node > 0 else crash_section
+        assert "volume_db" in section, "CrashAudio should have volume_db configured"
+
+    def test_bump_audio_has_volume_db(self, tscn_src):
+        """BumpAudio node should have a volume_db setting."""
+        bump_section = tscn_src[tscn_src.index("BumpAudio"):]
+        next_node = bump_section.find("[node", 1)
+        section = bump_section[:next_node] if next_node > 0 else bump_section
+        assert "volume_db" in section, "BumpAudio should have volume_db configured"
+
+    def test_crash_wav_mono_16bit(self):
+        """Crash WAV should be mono 16-bit for game audio efficiency."""
+        path = os.path.join(AUDIO_DIR, "crash.wav")
+        sr, ch, bps, _ = _read_wav_info(path)
+        assert ch == 1, f"crash.wav should be mono, got {ch} channels"
+        assert bps == 16, f"crash.wav should be 16-bit, got {bps}-bit"
+
+    def test_bump_wav_mono_16bit(self):
+        """Bump WAV should be mono 16-bit for game audio efficiency."""
+        path = os.path.join(AUDIO_DIR, "bump.wav")
+        sr, ch, bps, _ = _read_wav_info(path)
+        assert ch == 1, f"bump.wav should be mono, got {ch} channels"
+        assert bps == 16, f"bump.wav should be 16-bit, got {bps}-bit"
+
+    def test_crash_wav_sample_rate(self):
+        """Crash WAV should use a standard sample rate."""
+        path = os.path.join(AUDIO_DIR, "crash.wav")
+        sr, _, _, _ = _read_wav_info(path)
+        assert sr in (11025, 22050, 44100, 48000), \
+            f"crash.wav sample rate {sr} is non-standard"
+
+    def test_bump_wav_sample_rate(self):
+        """Bump WAV should use a standard sample rate."""
+        path = os.path.join(AUDIO_DIR, "bump.wav")
+        sr, _, _, _ = _read_wav_info(path)
+        assert sr in (11025, 22050, 44100, 48000), \
+            f"bump.wav sample rate {sr} is non-standard"

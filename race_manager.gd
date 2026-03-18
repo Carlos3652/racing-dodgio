@@ -276,19 +276,19 @@ func _build_curb_stripes(curve: Curve2D) -> void:
 			var col  = CURB_WHITE if is_white else CURB_RED
 
 			# Subdivide stripe into multiple points so it follows the curve on corners
-			var sub_count = 4  # 4 sub-segments per stripe = 5 sample points
+			var sub_count = 8  # 8 sub-segments per stripe = 9 sample points
 			var left = Line2D.new()
 			left.width         = CURB_STRIPE_WIDTH
 			left.default_color = col
-			left.begin_cap_mode = Line2D.LINE_CAP_NONE
-			left.end_cap_mode   = Line2D.LINE_CAP_NONE
+			left.begin_cap_mode = Line2D.LINE_CAP_SQUARE
+			left.end_cap_mode   = Line2D.LINE_CAP_SQUARE
 			left.z_index = 1
 
 			var right = Line2D.new()
 			right.width         = CURB_STRIPE_WIDTH
 			right.default_color = col
-			right.begin_cap_mode = Line2D.LINE_CAP_NONE
-			right.end_cap_mode   = Line2D.LINE_CAP_NONE
+			right.begin_cap_mode = Line2D.LINE_CAP_SQUARE
+			right.end_cap_mode   = Line2D.LINE_CAP_SQUARE
 			right.z_index = 1
 
 			for s in range(sub_count + 1):
@@ -857,7 +857,7 @@ func _update_hud(delta: float) -> void:
 	var place = _get_player_place()
 	var sfx   = ["", "st", "nd", "rd", "th", "th"]
 	hud_place_numeral.text = str(place)
-	hud_place_suffix.text  = sfx[clamp(place, 0, 5)]
+	hud_place_suffix.text  = sfx[clamp(place, 1, 5)]
 
 	match place:
 		1: hud_place_numeral.add_theme_color_override("font_color", Color(1.0,  0.85, 0.10, 1))  # gold
@@ -1218,7 +1218,7 @@ func _constrain_to_road() -> void:
 
 
 func _flash_screen() -> void:
-	if crash_audio:
+	if crash_audio and not crash_audio.playing:
 		crash_audio.play()
 	crash_label.visible    = true
 	crash_label.modulate.a = 1.0
@@ -1390,7 +1390,7 @@ func _record_finish(car_name: String) -> void:
 		_finish_banner_shown = true
 		var place    = finishers_count
 		var suffixes = ["", "st", "nd", "rd", "th", "th"]
-		var suf      = suffixes[clamp(place, 0, 5)]
+		var suf      = suffixes[clamp(place, 1, 5)]
 		finish_banner.text = "RACE COMPLETE - %d%s!" % [place, suf]
 		finish_banner.visible    = true
 		finish_banner.modulate.a = 0.0
