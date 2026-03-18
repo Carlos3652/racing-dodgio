@@ -1468,11 +1468,11 @@ func _do_camera_shake() -> void:
 # ---------------------------------------------------------------------------
 # Star sparkle on cookie collect – particle burst + floating label
 # ---------------------------------------------------------------------------
-const _CollectBurst = preload("res://collect_burst.gd")
+const CollectBurst = preload("res://collect_burst.gd")
 
 func _sparkle_at(pos: Vector2) -> void:
 	# Particle burst effect
-	var burst = _CollectBurst.new()
+	var burst = CollectBurst.new()
 	burst.position = pos
 	burst.z_index  = 20
 	add_child(burst)
