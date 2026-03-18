@@ -276,19 +276,19 @@ func _build_curb_stripes(curve: Curve2D) -> void:
 			var col  = CURB_WHITE if is_white else CURB_RED
 
 			# Subdivide stripe into multiple points so it follows the curve on corners
-			var sub_count = 4  # 4 sub-segments per stripe = 5 sample points
+			var sub_count = 8  # 8 sub-segments per stripe = 9 sample points
 			var left = Line2D.new()
 			left.width         = CURB_STRIPE_WIDTH
 			left.default_color = col
-			left.begin_cap_mode = Line2D.LINE_CAP_NONE
-			left.end_cap_mode   = Line2D.LINE_CAP_NONE
+			left.begin_cap_mode = Line2D.LINE_CAP_SQUARE
+			left.end_cap_mode   = Line2D.LINE_CAP_SQUARE
 			left.z_index = 1
 
 			var right = Line2D.new()
 			right.width         = CURB_STRIPE_WIDTH
 			right.default_color = col
-			right.begin_cap_mode = Line2D.LINE_CAP_NONE
-			right.end_cap_mode   = Line2D.LINE_CAP_NONE
+			right.begin_cap_mode = Line2D.LINE_CAP_SQUARE
+			right.end_cap_mode   = Line2D.LINE_CAP_SQUARE
 			right.z_index = 1
 
 			for s in range(sub_count + 1):
