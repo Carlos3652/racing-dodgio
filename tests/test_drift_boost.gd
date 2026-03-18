@@ -152,6 +152,27 @@ func _run() -> void:
 	if not has_typed_const_array_vis:
 		print("  ✓  No typed const arrays in car_visual.gd (crash-safe)")
 
+	# ── 11. Verify _cross_finish resets drift state ─────────
+	# When the player crosses the finish mid-drift, is_drifting and drift_time
+	# must be reset so car_visual.gd stops drawing smoke puffs immediately.
+	var cross_finish_idx := car_src.find("func _cross_finish")
+	if cross_finish_idx >= 0:
+		var cross_finish_section := car_src.substr(cross_finish_idx, 300)
+		var resets_drifting := cross_finish_section.find("is_drifting = false") >= 0
+		var resets_drift_time := cross_finish_section.find("drift_time = 0") >= 0
+		if resets_drifting and resets_drift_time:
+			print("  ✓  _cross_finish() resets is_drifting and drift_time (no lingering smoke)")
+		else:
+			if not resets_drifting:
+				print("  ✗ FAIL: _cross_finish() does not reset is_drifting to false")
+				issues += 1
+			if not resets_drift_time:
+				print("  ✗ FAIL: _cross_finish() does not reset drift_time to 0")
+				issues += 1
+	else:
+		print("  ✗ FAIL: _cross_finish() function not found in player_car.gd")
+		issues += 1
+
 	# ── Summary ────────────────────────────────────────────────
 	print("\n══════════════════════════════════════════════════")
 	if issues == 0:
