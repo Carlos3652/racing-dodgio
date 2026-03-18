@@ -24,6 +24,7 @@ var phase: Phase = Phase.FLASH
 var _skipped: bool = false
 var _results_built: bool = false
 var _tweens: Array = []  # tracked tweens for safe cleanup
+var _blink_tween: Tween  # dedicated ref for the infinite skip-label blink
 var _result_saved: bool = false    # guard against double-record (set in _ready)
 var _race_recorded: bool = false   # button-handler guard: circuit recording + nav lock
 var _is_pb: bool = false           # cached PB result from recording
@@ -263,10 +264,12 @@ func _start_phase_reveal() -> void:
 	skip_lbl.add_theme_color_override("font_color", Color(1, 1, 1, 0.3))
 	reveal_container.add_child(skip_lbl)
 
-	# Blink the skip hint
-	var blink_tw = _tracked_tween().set_loops()
-	blink_tw.tween_property(skip_lbl, "modulate:a", 0.3, 0.6)
-	blink_tw.tween_property(skip_lbl, "modulate:a", 1.0, 0.6)
+	# Blink the skip hint (store dedicated ref so we can kill it before freeing
+	# reveal_container in _start_phase_results — otherwise the infinite-loop
+	# tween fires on the freed skip_lbl node).
+	_blink_tween = _tracked_tween().set_loops()
+	_blink_tween.tween_property(skip_lbl, "modulate:a", 0.3, 0.6)
+	_blink_tween.tween_property(skip_lbl, "modulate:a", 1.0, 0.6)
 
 	# Auto-advance to Phase 3 after reveal completes
 	var advance_tw = _tracked_tween()
@@ -287,6 +290,12 @@ func _start_phase_results() -> void:
 	if flash_rect:
 		flash_rect.queue_free()
 		flash_rect = null
+
+	# Kill the infinite blink tween BEFORE freeing reveal_container,
+	# otherwise it fires on the freed skip_lbl node inside the container.
+	if _blink_tween and is_instance_valid(_blink_tween):
+		_blink_tween.kill()
+		_blink_tween = null
 
 	# Fade out and free the reveal container
 	if reveal_container:
