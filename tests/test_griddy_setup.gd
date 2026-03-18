@@ -1,6 +1,6 @@
 @tool
 extends EditorScript
-## Verify _setup_griddy() fix: no await, guarded frame access.
+## Verify _setup_griddy() fix: no await, guarded frame access, CONNECT_ONE_SHOT.
 ## Run via: File → Run Script  (in Godot editor)
 
 func _run() -> void:
@@ -33,13 +33,13 @@ func _run() -> void:
 		failed += 1
 		printerr("FAIL  _setup_griddy still contains await")
 
-	# 2. _setup_griddy connects to process_frame
-	if body.find("process_frame.connect(") >= 0:
+	# 2. _setup_griddy connects to process_frame with CONNECT_ONE_SHOT
+	if body.find("process_frame.connect(") >= 0 and body.find("CONNECT_ONE_SHOT") >= 0:
 		passed += 1
-		print("PASS  _setup_griddy uses process_frame signal")
+		print("PASS  _setup_griddy uses process_frame + CONNECT_ONE_SHOT")
 	else:
 		failed += 1
-		printerr("FAIL  _setup_griddy missing process_frame.connect")
+		printerr("FAIL  _setup_griddy missing process_frame.connect or CONNECT_ONE_SHOT")
 
 	# 3. _set_griddy_frame exists
 	if src.find("func _set_griddy_frame(") >= 0:
@@ -58,7 +58,15 @@ func _run() -> void:
 		failed += 1
 		printerr("FAIL  _set_griddy_frame missing type checks")
 
-	# 5. No direct griddy_kid.frame = outside helper
+	# 5. _set_griddy_frame handles null griddy_kid
+	if frame_body.find("griddy_kid == null") >= 0 and frame_body.find("push_warning") >= 0:
+		passed += 1
+		print("PASS  _set_griddy_frame handles null griddy_kid with warning")
+	else:
+		failed += 1
+		printerr("FAIL  _set_griddy_frame missing null griddy_kid guard")
+
+	# 6. No direct griddy_kid.frame = outside helper
 	var outside = src.replace(frame_body, "")
 	if outside.find("griddy_kid.frame") == -1:
 		passed += 1
@@ -67,7 +75,7 @@ func _run() -> void:
 		failed += 1
 		printerr("FAIL  direct griddy_kid.frame assignment found outside helper")
 
-	# 6. _on_griddy_finished uses helper
+	# 7. _on_griddy_finished uses helper
 	var fin_body = _extract.call("_on_griddy_finished")
 	if fin_body.find("_set_griddy_frame(") >= 0:
 		passed += 1
@@ -76,18 +84,35 @@ func _run() -> void:
 		failed += 1
 		printerr("FAIL  _on_griddy_finished not using _set_griddy_frame")
 
-	# 7. _on_griddy_layout_tick disconnects
-	var tick_body = _extract.call("_on_griddy_layout_tick")
-	if tick_body.find("disconnect(") >= 0:
+	# 8. _on_griddy_layout_first_frame chains to _on_griddy_layout_ready
+	var first_body = _extract.call("_on_griddy_layout_first_frame")
+	if first_body.find("_on_griddy_layout_ready") >= 0 and first_body.find("CONNECT_ONE_SHOT") >= 0:
 		passed += 1
-		print("PASS  _on_griddy_layout_tick disconnects signal")
+		print("PASS  _on_griddy_layout_first_frame chains with ONE_SHOT")
 	else:
 		failed += 1
-		printerr("FAIL  _on_griddy_layout_tick does not disconnect")
+		printerr("FAIL  _on_griddy_layout_first_frame missing chain or ONE_SHOT")
 
-	# 8. _ready has no await
-	var ready_body = _extract.call("_ready")
-	if ready_body.find("await") == -1:
+	# 9. _on_griddy_layout_ready has is_inside_tree guard
+	var ready_body = _extract.call("_on_griddy_layout_ready")
+	if ready_body.find("is_inside_tree()") >= 0:
+		passed += 1
+		print("PASS  _on_griddy_layout_ready has is_inside_tree guard")
+	else:
+		failed += 1
+		printerr("FAIL  _on_griddy_layout_ready missing is_inside_tree guard")
+
+	# 10. _griddy_defer_frames variable removed
+	if src.find("var _griddy_defer_frames") == -1:
+		passed += 1
+		print("PASS  _griddy_defer_frames instance variable removed")
+	else:
+		failed += 1
+		printerr("FAIL  _griddy_defer_frames instance variable still present")
+
+	# 11. _ready has no await
+	var ready_main = _extract.call("_ready")
+	if ready_main.find("await") == -1:
 		passed += 1
 		print("PASS  _ready has no await")
 	else:

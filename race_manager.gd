@@ -82,7 +82,6 @@ var hype_bar:          ProgressBar
 var hype_label:        Label
 var griddy_kid:        Node2D
 var griddy_anim:       AnimationPlayer
-var _griddy_defer_frames: int = 0
 
 var last_digit_shown: int = -1
 var hype_timer:       float = 0.0
@@ -792,16 +791,16 @@ func _setup_griddy() -> void:
 	griddy_anim.animation_finished.connect(_on_griddy_finished)
 
 	# Wait 2 frames for layout to settle before reading GriddyFrame position.
-	# Uses a signal callback so _ready stays synchronous.
-	_griddy_defer_frames = 2
-	get_tree().process_frame.connect(_on_griddy_layout_tick)
+	# Frame 1: skip via ONE_SHOT, then reconnect for frame 2.
+	get_tree().process_frame.connect(_on_griddy_layout_first_frame, CONNECT_ONE_SHOT)
 
 
-func _on_griddy_layout_tick() -> void:
-	_griddy_defer_frames -= 1
-	if _griddy_defer_frames > 0:
-		return
-	get_tree().process_frame.disconnect(_on_griddy_layout_tick)
+func _on_griddy_layout_first_frame() -> void:
+	# Frame 1 elapsed; wait one more frame then finalise position.
+	get_tree().process_frame.connect(_on_griddy_layout_ready, CONNECT_ONE_SHOT)
+
+
+func _on_griddy_layout_ready() -> void:
 	if not is_inside_tree():
 		return
 	var frame_rect = $HUD/StandPanel/StandVBox/GriddyFrame.get_global_rect()
@@ -810,9 +809,14 @@ func _on_griddy_layout_tick() -> void:
 
 
 func _set_griddy_frame(f: int) -> void:
+	# Intentional silent no-op when griddy_kid is null — can happen if the HUD
+	# node tree hasn't been set up yet or was freed between frames.
+	if griddy_kid == null:
+		push_warning("_set_griddy_frame called with null griddy_kid — skipping (this is expected during teardown)")
+		return
 	if griddy_kid is AnimatedSprite2D or griddy_kid is Sprite2D:
 		griddy_kid.frame = f
-	elif griddy_kid != null:
+	else:
 		push_warning("griddy_kid is %s, expected AnimatedSprite2D or Sprite2D" % griddy_kid.get_class())
 
 
