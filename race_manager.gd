@@ -1218,7 +1218,7 @@ func _constrain_to_road() -> void:
 
 
 func _flash_screen() -> void:
-	if crash_audio:
+	if crash_audio and not crash_audio.playing:
 		crash_audio.play()
 	crash_label.visible    = true
 	crash_label.modulate.a = 1.0
