@@ -175,6 +175,8 @@ func _cross_finish() -> void:
 		return
 	has_finished = true
 	speed = 0.0
+	is_drifting = false
+	drift_time = 0.0
 	if engine_audio:
 		engine_audio.stop()
 	finished.emit("You")
