@@ -31,6 +31,7 @@ var lane_offset: float = 0.0  # perpendicular offset from path center (pixels)
 var current_lap: int = 0
 var total_laps: int = 3
 var _prev_progress_ratio: float = 0.0
+var _progress_since_last_lap: float = 0.0
 
 # Collision penalty
 var bump_time: float = 0.0
@@ -173,9 +174,15 @@ func _process(delta: float) -> void:
 		var perp = Vector2(-tangent.y, tangent.x)
 		position = base_pos + perp * lane_offset
 
+	# Accumulate progress since last lap (skip wrap frames to avoid false positives)
+	if not (_prev_progress_ratio > 0.8 and progress_ratio < 0.2):
+		_progress_since_last_lap += abs(progress_ratio - _prev_progress_ratio)
+
 	# Detect lap completion: ratio wraps from >0.8 to <0.2
-	if _prev_progress_ratio > 0.8 and progress_ratio < 0.2:
+	# Guard against Figure Eight false wraps by requiring 70%+ progress since last lap
+	if _prev_progress_ratio > 0.8 and progress_ratio < 0.2 and _progress_since_last_lap > 0.7:
 		current_lap += 1
+		_progress_since_last_lap = 0.0
 		if current_lap >= total_laps:
 			_cross_finish()
 	_prev_progress_ratio = progress_ratio

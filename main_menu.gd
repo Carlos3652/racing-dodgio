@@ -29,6 +29,7 @@ var selected_index: int = 0
 var selected_difficulty: int = 1  # 0=easy, 1=normal, 2=hard
 var car_panels: Array = []  # references to the panel containers
 var car_visuals: Array = []  # references to car_visual nodes
+var _selection_tweens: Array = []  # active tweens from _update_selection()
 var diff_buttons: Array = []  # difficulty button references
 var name_label: Label
 var stat_speed: ProgressBar
@@ -200,11 +201,18 @@ func _update_selection() -> void:
 		else:
 			sbox.border_color = COL_DIM_BORDER
 
+	# Kill existing selection tweens to prevent accumulation
+	for tw in _selection_tweens:
+		if tw != null and tw.is_valid():
+			tw.kill()
+	_selection_tweens.clear()
+
 	# Scale animation on selected car
 	for i in range(car_visuals.size()):
 		var target_scale = Vector2(1.1, 1.1) if i == selected_index else Vector2(0.9, 0.9)
 		var tw = create_tween()
 		tw.tween_property(car_visuals[i], "scale", target_scale, 0.15).set_trans(Tween.TRANS_BACK)
+		_selection_tweens.append(tw)
 
 
 func _input(event: InputEvent) -> void:

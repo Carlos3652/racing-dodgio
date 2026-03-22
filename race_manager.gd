@@ -1063,6 +1063,7 @@ func _check_ai_collisions() -> void:
 						ai.apply_boost()
 						_sparkle_at(child.position)
 						_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
+						break  # prevent multiple AI collecting same star in one frame
 
 
 # ---------------------------------------------------------------------------
@@ -1177,11 +1178,11 @@ func _local_closest_offset(curve: Curve2D, pos: Vector2, hint: float) -> float:
 	var refine_lo := best_off - step
 	var refine_hi := best_off + step
 	for _r in range(LOCAL_REFINE_STEPS):
-		var mid_a := (refine_lo + refine_hi) * 0.5 - (refine_hi - refine_lo) * 0.125
-		var mid_b := (refine_lo + refine_hi) * 0.5 + (refine_hi - refine_lo) * 0.125
-		# Wrap
-		var off_a := fmod(mid_a + curve_len, curve_len)
-		var off_b := fmod(mid_b + curve_len, curve_len)
+		var mid_a := refine_lo + (refine_hi - refine_lo) * 0.333
+		var mid_b := refine_lo + (refine_hi - refine_lo) * 0.667
+		# Wrap into valid range using fposmod (handles negative values at track seam)
+		var off_a := fposmod(mid_a, curve_len)
+		var off_b := fposmod(mid_b, curve_len)
 		var pt_a := curve.sample_baked(off_a)
 		var pt_b := curve.sample_baked(off_b)
 		var dsq_a := (pt_a.x - pos.x) * (pt_a.x - pos.x) + (pt_a.y - pos.y) * (pt_a.y - pos.y)
