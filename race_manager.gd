@@ -117,6 +117,7 @@ var fade_overlay:  ColorRect
 var camera:        Camera2D
 var _zoom_tween:   Tween = null
 var _boost_was_active: bool = false
+var _boost_bar_state: String = "none"  # "crash", "boost", or "none" — tracks last bar mode to avoid per-frame overrides
 var minimap:       Control
 var crash_sfx:     AudioStreamPlayer
 var bump_sfx:      AudioStreamPlayer
@@ -901,16 +902,23 @@ func _update_hud(delta: float) -> void:
 		hud_div3.visible         = false
 
 	# Boost / stun bar at screen bottom
+	# Only apply theme overrides and max_value when state changes — not every frame
 	if player.crash_time > 0:
-		boost_bar.max_value = player.STUN_DURATION
+		if _boost_bar_state != "crash":
+			boost_bar.max_value = player.STUN_DURATION
+			boost_bar.add_theme_stylebox_override("fill", _crash_style)
+			_boost_bar_state = "crash"
 		boost_bar.value = player.crash_time
-		boost_bar.add_theme_stylebox_override("fill", _crash_style)
 	elif player.boost_time > 0:
-		boost_bar.max_value = player.BOOST_DURATION
+		if _boost_bar_state != "boost":
+			boost_bar.max_value = player.BOOST_DURATION
+			boost_bar.add_theme_stylebox_override("fill", _boost_style)
+			_boost_bar_state = "boost"
 		boost_bar.value = player.boost_time
-		boost_bar.add_theme_stylebox_override("fill", _boost_style)
 	else:
-		boost_bar.value = 0.0
+		if _boost_bar_state != "none":
+			boost_bar.value = 0.0
+			_boost_bar_state = "none"
 
 	# Hype bar — drains after cookie collect
 	if hype_timer > 0.0:
@@ -1107,7 +1115,8 @@ func _check_car_bumps(delta: float) -> void:
 			if bump_cooldowns.has(pair_key):
 				continue
 			var dist = ai_cars[i].global_position.distance_to(ai_cars[j].global_position)
-			if dist < BUMP_DIST:
+			var effective_bump_dist_ai = BUMP_DIST + max(ai_cars[i].bump_radius_bonus, ai_cars[j].bump_radius_bonus)
+			if dist < effective_bump_dist_ai:
 				ai_cars[i].apply_bump()
 				ai_cars[j].apply_bump()
 				bump_cooldowns[pair_key] = BUMP_COOLDOWN
