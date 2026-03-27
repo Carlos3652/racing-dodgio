@@ -47,7 +47,9 @@ func record_race(track_name: String, position: int, time: float, stars: int) -> 
 	var is_pb = false
 
 	if not data.tracks.has(track_name):
-		data.tracks[track_name] = {best_position = position, best_time = time, total_races = 1}
+		# Only record best_time for 1st-place finishes — non-1st times use INF as sentinel
+		var first_best_time = time if position == 1 else INF
+		data.tracks[track_name] = {best_position = position, best_time = first_best_time, total_races = 1}
 		is_pb = (position == 1)
 	else:
 		var rec = data.tracks[track_name]
