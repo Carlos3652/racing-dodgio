@@ -122,11 +122,17 @@ class TestAiVsAiBumpRadius:
 
     def test_player_vs_ai_still_uses_bonus(self, mgr_src):
         """Player-vs-AI bump check must still use bump_radius_bonus (regression)."""
-        # This was already working — verify it wasn't accidentally removed
-        idx = mgr_src.find("player_")
-        # Look for the player bump section
-        player_bump_idx = mgr_src.find("effective_bump_dist")
-        assert player_bump_idx >= 0, "effective_bump_dist not found at all"
+        # Anchor to the Player vs AI section header and inspect that specific block
+        idx = mgr_src.find("# Player vs AI")
+        assert idx >= 0, "Player vs AI section not found in race_manager.gd"
+        # Grab the player-vs-AI block (before the AI vs AI section)
+        ai_vs_ai_idx = mgr_src.find("# AI vs AI", idx)
+        assert ai_vs_ai_idx > idx, "AI vs AI section not found after Player vs AI"
+        section = mgr_src[idx:ai_vs_ai_idx]
+        assert "effective_bump_dist" in section, \
+            "Player-vs-AI section does not compute effective_bump_dist"
+        assert "bump_radius_bonus" in section, \
+            "Player-vs-AI section does not use bump_radius_bonus"
 
 
 # ── rd-high-06: First 1st-place time written to records ──────────────────────

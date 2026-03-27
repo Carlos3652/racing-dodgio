@@ -117,7 +117,7 @@ var fade_overlay:  ColorRect
 var camera:        Camera2D
 var _zoom_tween:   Tween = null
 var _boost_was_active: bool = false
-var _boost_bar_state: String = ""  # "crash", "boost", or "none" — tracks last bar mode to avoid per-frame overrides
+var _boost_bar_state: String = "none"  # "crash", "boost", or "none" — tracks last bar mode to avoid per-frame overrides
 var minimap:       Control
 var crash_sfx:     AudioStreamPlayer
 var bump_sfx:      AudioStreamPlayer
@@ -917,8 +917,8 @@ func _update_hud(delta: float) -> void:
 		boost_bar.value = player.boost_time
 	else:
 		if _boost_bar_state != "none":
+			boost_bar.value = 0.0
 			_boost_bar_state = "none"
-		boost_bar.value = 0.0
 
 	# Hype bar — drains after cookie collect
 	if hype_timer > 0.0:
