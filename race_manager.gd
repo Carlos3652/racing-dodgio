@@ -86,6 +86,7 @@ var griddy_anim:       AnimationPlayer
 var last_digit_shown: int = -1
 var _perfect_start_pending: bool = false
 var _false_start: bool = false
+var _last_hud_lap: int = 0
 var hype_timer:       float = 0.0
 var _scene_changing:  bool  = false
 var _last_place:      int   = 0
@@ -891,6 +892,27 @@ func _update_hud(delta: float) -> void:
 	hud_timer.text = "%d:%05.2f" % [mins, secs]
 	hud_speed.text = "%d km/h" % player.get_speed_kmh()
 	hud_lap.text = "LAP %d/%d" % [min(player.current_lap + 1, GameData.TOTAL_LAPS), GameData.TOTAL_LAPS]
+
+	# Lap change — punch animation + gold border flash
+	if player.current_lap != _last_hud_lap and player.current_lap > 0 and player.current_lap < GameData.TOTAL_LAPS:
+		_last_hud_lap = player.current_lap
+		# Punch scale on lap counter
+		var tw_lap = create_tween()
+		hud_lap.scale = Vector2(1.6, 1.6)
+		tw_lap.tween_property(hud_lap, "scale", Vector2(1.0, 1.0), 0.4).set_trans(Tween.TRANS_BOUNCE)
+		# Gold border flash
+		var flash = ColorRect.new()
+		flash.color = Color(1.0, 0.85, 0.2, 0.6)
+		flash.anchors_preset = Control.PRESET_FULL_RECT
+		flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flash.z_index = 100
+		var canvas = get_node("CanvasLayer") if has_node("CanvasLayer") else self
+		canvas.add_child(flash)
+		var tw_flash = create_tween()
+		tw_flash.tween_property(flash, "color:a", 0.0, 0.4)
+		tw_flash.tween_callback(flash.queue_free)
+	elif player.current_lap != _last_hud_lap:
+		_last_hud_lap = player.current_lap
 
 	# Boost status label — only visible during boost, stun, or bump (hidden when idle)
 	if player.bump_time > 0 and player.crash_time <= 0:
