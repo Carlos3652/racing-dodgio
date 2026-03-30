@@ -27,7 +27,7 @@ var race_stats: Dictionary = {}           # {stars: int, stuns: int, bumps: int,
 const TOTAL_LAPS = 3
 const F1_POINTS = [10, 6, 4, 2, 1]
 
-const TRACKS = [
+var TRACKS = [
 	# -------------------------------------------------------------------------
 	# Track 0 — Overland Park Loop
 	# A clean clockwise oval with gently swept corners. Generous spacing between
@@ -38,6 +38,11 @@ const TRACKS = [
 	# -------------------------------------------------------------------------
 	{
 		name = "Overland Park Loop",
+		theme = {
+			road_color     = Color(0.200, 0.133, 0.280, 1),
+			shoulder_color = Color(0.260, 0.260, 0.300, 1),
+			curb_alt_color = Color(0.580, 0.133, 0.720, 1),
+		},
 		# Stars: one on each straight, two near the wide sweeping corners
 		star_offsets = [0.12, 0.37, 0.62, 0.85],
 		# Jeeps: mid-straight where you're going fastest and can't dodge early
@@ -68,6 +73,11 @@ const TRACKS = [
 	# -------------------------------------------------------------------------
 	{
 		name = "Downtown Sprint",
+		theme = {
+			road_color     = Color(0.180, 0.180, 0.220, 1),
+			shoulder_color = Color(0.140, 0.160, 0.240, 1),
+			curb_alt_color = Color(0.200, 0.400, 0.900, 1),
+		},
 		# Stars: approach to the north hairpin, mid south straight, chicane apex
 		star_offsets = [0.14, 0.40, 0.60, 0.82],
 		# Jeeps: entry to the hairpin (punishes late braking), mid south straight
@@ -97,6 +107,11 @@ const TRACKS = [
 	# -------------------------------------------------------------------------
 	{
 		name = "Lakeside Curves",
+		theme = {
+			road_color     = Color(0.120, 0.180, 0.200, 1),
+			shoulder_color = Color(0.080, 0.200, 0.180, 1),
+			curb_alt_color = Color(0.100, 0.600, 0.500, 1),
+		},
 		# Stars: each lobe apex — rewards staying on the racing line
 		star_offsets = [0.17, 0.42, 0.67, 0.88],
 		# Jeeps: the linking straights between lobes — unavoidable choke points
@@ -132,6 +147,11 @@ const TRACKS = [
 	# -------------------------------------------------------------------------
 	{
 		name = "Figure Eight",
+		theme = {
+			road_color     = Color(0.220, 0.180, 0.140, 1),
+			shoulder_color = Color(0.240, 0.200, 0.140, 1),
+			curb_alt_color = Color(0.800, 0.200, 0.100, 1),
+		},
 		# Stars: one per loop apex, one at each crossover approach
 		star_offsets = [0.13, 0.38, 0.63, 0.88],
 		# Jeeps: crossover zone entry (tight, must dodge) + one per loop straight
@@ -167,6 +187,11 @@ const TRACKS = [
 	# -------------------------------------------------------------------------
 	{
 		name = "Championship Finale",
+		theme = {
+			road_color     = Color(0.080, 0.080, 0.100, 1),
+			shoulder_color = Color(0.060, 0.060, 0.080, 1),
+			curb_alt_color = Color(0.850, 0.700, 0.200, 1),
+		},
 		star_offsets = [0.10, 0.26, 0.45, 0.64, 0.82],
 		jeep_offsets = [0.18, 0.38, 0.58, 0.78],
 		points = [
