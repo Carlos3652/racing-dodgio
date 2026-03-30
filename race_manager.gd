@@ -9,13 +9,13 @@ const ROAD_WIDTH     = 380.0
 const BUMP_DIST      = 55.0   # car-to-car collision distance
 const BUMP_COOLDOWN  = 2.0    # seconds between bump checks per pair
 const SHOULDER_W     = 500.0  # wider shoulder for visible off-road grass
-const ROAD_COLOR     = Color(0.172, 0.172, 0.220, 1)
-const SHOULDER_COLOR = Color(0.102, 0.180, 0.102, 1)
+var road_color     = Color(0.172, 0.172, 0.220, 1)
+var shoulder_color = Color(0.102, 0.180, 0.102, 1)
 const DASH_COLOR     = Color(1.000, 0.878, 0.200, 1)
 const DASH_LEN       = 90.0
 const GAP_LEN        = 55.0
 const CURB_WHITE     = Color(0.941, 0.929, 0.878, 1)
-const CURB_RED       = Color(0.800, 0.133, 0.000, 1)
+var curb_alt_color   = Color(0.800, 0.133, 0.000, 1)
 const CURB_STRIPE_LEN   = 50.0
 const CURB_STRIPE_WIDTH = 24.0
 const GATE_NEON_COLOR   = Color(0.0, 0.9, 1.0, 0.90)
@@ -134,10 +134,19 @@ var _hype_style:   StyleBoxFlat
 func _ready() -> void:
 	# Load track points from GameData based on current_track_index
 	var idx = GameData.current_track_index
+	var track_data
 	if idx >= 0 and idx < GameData.TRACKS.size():
-		TRACK_POINTS = GameData.TRACKS[idx].points.duplicate()
+		track_data = GameData.TRACKS[idx]
 	else:
-		TRACK_POINTS = GameData.TRACKS[0].points.duplicate()
+		track_data = GameData.TRACKS[0]
+	TRACK_POINTS = track_data.points.duplicate()
+
+	# Apply per-track color theme
+	if track_data.has("theme"):
+		var theme = track_data.theme
+		road_color     = theme.get("road_color", road_color)
+		shoulder_color = theme.get("shoulder_color", shoulder_color)
+		curb_alt_color = theme.get("curb_alt_color", curb_alt_color)
 
 	# Difficulty-adjusted AI star pickup radius
 	match GameData.difficulty:
@@ -177,7 +186,7 @@ func _create_bar_styles() -> void:
 func _build_road() -> void:
 	var shoulder = $Shoulder as Line2D
 	shoulder.width = SHOULDER_W
-	shoulder.default_color = SHOULDER_COLOR
+	shoulder.default_color = shoulder_color
 	shoulder.joint_mode = Line2D.LINE_JOINT_ROUND
 	shoulder.begin_cap_mode = Line2D.LINE_CAP_NONE
 	shoulder.end_cap_mode   = Line2D.LINE_CAP_NONE
@@ -186,7 +195,7 @@ func _build_road() -> void:
 
 	var road = $Road as Line2D
 	road.width = ROAD_WIDTH
-	road.default_color = ROAD_COLOR
+	road.default_color = road_color
 	road.joint_mode = Line2D.LINE_JOINT_ROUND
 	road.begin_cap_mode = Line2D.LINE_CAP_NONE
 	road.end_cap_mode   = Line2D.LINE_CAP_NONE
@@ -273,7 +282,7 @@ func _build_curb_stripes(curve: Curve2D) -> void:
 		var near_end   = end_pos > (total_len - gate_half)
 
 		if not near_start and not near_end:
-			var col  = CURB_WHITE if is_white else CURB_RED
+			var col  = CURB_WHITE if is_white else curb_alt_color
 
 			# Subdivide stripe into multiple points so it follows the curve on corners
 			var sub_count = 8  # 8 sub-segments per stripe = 9 sample points
