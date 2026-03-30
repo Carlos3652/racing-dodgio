@@ -701,7 +701,8 @@ func _place_obstacles() -> void:
 		var star = _StarScene.new()
 		star.position = pos
 		star.scale    = Vector2(1.8, 1.8)
-		star.set_meta("kind", "cookie")
+		var kind = "shield" if randf() < 0.20 else "cookie"
+		star.set_meta("kind", kind)
 		add_child(star)
 		obstacles.append(star)
 
@@ -1086,6 +1087,12 @@ func _check_player_collisions() -> void:
 				if dist < 55:
 					player.apply_boost()
 					_play_griddy()
+					_sparkle_at(child.position)
+					_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
+					_stat_stars += 1
+			"shield":
+				if dist < 55:
+					player.has_shield = true
 					_sparkle_at(child.position)
 					_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
 					_stat_stars += 1

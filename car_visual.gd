@@ -66,6 +66,18 @@ func _draw() -> void:
 			draw_arc(Vector2(0, 40), 10, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.65), true)
 			draw_arc(Vector2(0, 40), 17, 0, TAU, 12, Color(1.0, 0.85, 0.10, 0.22), true)
 
+	# Shield hexagon outline — drawn last so it's always visible
+	if is_player_car:
+		var parent2 = get_parent()
+		if parent2 and "has_shield" in parent2 and parent2.has_shield:
+			var hex_r = 48.0
+			var hex_pts = PackedVector2Array()
+			for i in range(6):
+				var angle = TAU / 6.0 * i - PI / 6.0
+				hex_pts.append(Vector2(cos(angle) * hex_r, sin(angle) * hex_r))
+			hex_pts.append(hex_pts[0])
+			draw_polyline(hex_pts, Color(0.2, 0.8, 1.0, 0.7), 3.0, true)
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────
 

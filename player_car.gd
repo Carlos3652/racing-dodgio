@@ -19,6 +19,7 @@ var crash_time: float = 0.0
 var bump_time: float = 0.0
 var has_finished: bool = false
 var is_racing: bool = false
+var has_shield: bool = false
 var track_progress: float = 0.0  # curve offset — used for place calc
 
 # Drift boost
@@ -150,6 +151,9 @@ func apply_bump() -> void:
 
 func apply_crash() -> void:
 	if crash_time > 0:
+		return
+	if has_shield:
+		has_shield = false
 		return
 	speed = 0.0
 	boost_time = 0.0
