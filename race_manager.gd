@@ -84,6 +84,8 @@ var griddy_kid:        Node2D
 var griddy_anim:       AnimationPlayer
 
 var last_digit_shown: int = -1
+var _perfect_start_pending: bool = false
+var _false_start: bool = false
 var hype_timer:       float = 0.0
 var _scene_changing:  bool  = false
 var _last_place:      int   = 0
@@ -1008,12 +1010,29 @@ func _process(delta: float) -> void:
 				last_digit_shown = 0
 				_show_countdown_digit("GO!", Color(0.2, 1.0, 0.3), 108)
 				cd_go_sfx.play()
+			# Perfect start detection
+			if Input.is_action_just_pressed("ui_up") and not _false_start:
+				if countdown_left <= 0.3 and countdown_left > -0.1:
+					_perfect_start_pending = true
+				elif countdown_left > 0.3:
+					_false_start = true
+					_show_countdown_digit("TOO EARLY!", Color(1.0, 0.2, 0.2), 72)
 			if countdown_left <= -0.6:
 				_hide_countdown()
 				state = State.RACING
 				player.is_racing = true
 				for ai in ai_cars:
 					ai.is_racing = true
+				# Apply perfect start boost or false start stun
+				if _perfect_start_pending:
+					player.apply_close_call_boost(1.0)
+					_show_countdown_digit("PERFECT START!", Color(0.2, 1.0, 0.5), 72)
+					var tw = create_tween()
+					tw.tween_property(hud_countdown, "scale", Vector2.ZERO, 1.0).set_trans(Tween.TRANS_BACK)
+					tw.tween_callback(func(): hud_countdown.text = "")
+				elif _false_start:
+					player.speed = 0.0
+					player.crash_time = 1.0
 
 		State.RACING:
 			race_time += delta
