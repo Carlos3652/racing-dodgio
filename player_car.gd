@@ -14,6 +14,7 @@ var BOOST_DURATION: float = 5.0
 var speed: float = 0.0
 @onready var engine_audio: AudioStreamPlayer = $EngineAudio
 var boost_time: float = 0.0
+var boost_top_speed: float = BOOST_SPEED  # may be overridden by drift boost
 var crash_time: float = 0.0
 var bump_time: float = 0.0
 var has_finished: bool = false
@@ -87,11 +88,11 @@ func _process(delta: float) -> void:
 	else:
 		# Released drift or never held
 		if is_drifting and drift_time >= DRIFT_BOOST_THRESHOLD:
-			apply_close_call_boost(DRIFT_BOOST_DURATION)
+			apply_close_call_boost(DRIFT_BOOST_DURATION, MAX_SPEED * DRIFT_BOOST_MULT)
 		is_drifting = false
 		drift_time = 0.0
 
-	var top = BOOST_SPEED if boost_time > 0 else MAX_SPEED
+	var top = boost_top_speed if boost_time > 0 else MAX_SPEED
 	if boost_time > 0:
 		boost_time -= delta
 		speed = min(speed + ACCEL * delta, top)
@@ -128,10 +129,18 @@ func _process(delta: float) -> void:
 
 func apply_boost() -> void:
 	boost_time = BOOST_DURATION
+	boost_top_speed = BOOST_SPEED
 
 
-func apply_close_call_boost(duration: float) -> void:
-	boost_time = max(boost_time, duration)
+func apply_close_call_boost(duration: float, top: float = BOOST_SPEED) -> void:
+	# Use the higher remaining time but always take the caller's top speed
+	# (drift boost passes MAX_SPEED * DRIFT_BOOST_MULT; close-call passes BOOST_SPEED)
+	if duration > boost_time:
+		boost_time = duration
+		boost_top_speed = top
+	elif top > boost_top_speed:
+		# Same or shorter duration but a faster top — upgrade the ceiling
+		boost_top_speed = top
 
 
 func apply_bump() -> void:
@@ -144,6 +153,7 @@ func apply_crash() -> void:
 		return
 	speed = 0.0
 	boost_time = 0.0
+	boost_top_speed = BOOST_SPEED
 	drift_time = 0.0
 	is_drifting = false
 	crash_time = STUN_DURATION
