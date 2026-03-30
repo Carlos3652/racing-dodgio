@@ -71,6 +71,7 @@ var hud_timer:         Label
 var hud_speed:         Label
 var hud_boost_status:  Label
 var hud_lap:           Label
+var hud_gap:           Label
 var hud_div3:          ColorRect
 var hud_place_up:      Label
 var hud_countdown:     Label
@@ -742,6 +743,14 @@ func _setup_hud_refs() -> void:
 	var stat_vbox = $HUD/StatPanel/StatVBox
 	stat_vbox.add_child(hud_lap)
 	stat_vbox.move_child(hud_lap, stat_vbox.get_child_count() - 1)
+
+	# Gap-to-leader label
+	hud_gap = Label.new()
+	hud_gap.text = ""
+	hud_gap.add_theme_font_size_override("font_size", 18)
+	hud_gap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stat_vbox.add_child(hud_gap)
+
 	hud_place_up      = $HUD/PlaceUpLabel
 	hud_countdown     = $HUD/CountdownLabel
 	countdown_backing = $HUD/CountdownBacking
@@ -914,6 +923,34 @@ func _update_hud(delta: float) -> void:
 		tw_flash.tween_callback(flash.queue_free)
 	elif player.current_lap != _last_hud_lap:
 		_last_hud_lap = player.current_lap
+
+	# Gap-to-leader (or lead over 2nd)
+	var curve_len = track_path.curve.get_baked_length()
+	var player_total = float(player.current_lap) * curve_len + player.track_progress
+	if place == 1:
+		# Show lead over 2nd place
+		var best_ai_total = 0.0
+		for ai in ai_cars:
+			var ai_total = ai.get_total_progress()
+			if ai_total > best_ai_total:
+				best_ai_total = ai_total
+		var gap_dist = player_total - best_ai_total
+		var avg_speed = maxf(abs(player.speed), 100.0)
+		var gap_secs = gap_dist / avg_speed
+		hud_gap.text = "-%.1fs" % gap_secs
+		hud_gap.add_theme_color_override("font_color", Color(0.2, 1.0, 0.3, 1))
+	else:
+		# Show gap to leader
+		var leader_total = 0.0
+		for ai in ai_cars:
+			var ai_total = ai.get_total_progress()
+			if ai_total > leader_total:
+				leader_total = ai_total
+		var gap_dist = leader_total - player_total
+		var avg_speed = maxf(abs(player.speed), 100.0)
+		var gap_secs = gap_dist / avg_speed
+		hud_gap.text = "+%.1fs" % gap_secs
+		hud_gap.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2, 1))
 
 	# Boost status label — only visible during boost, stun, or bump (hidden when idle)
 	if player.bump_time > 0 and player.crash_time <= 0:
