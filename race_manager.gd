@@ -127,6 +127,8 @@ var crash_sfx:     AudioStreamPlayer
 var bump_sfx:      AudioStreamPlayer
 var cd_beep_sfx:   AudioStreamPlayer
 var cd_go_sfx:     AudioStreamPlayer
+var star_sfx:      AudioStreamPlayer
+var lap_sfx:       AudioStreamPlayer
 
 # StyleBoxFlat instances for dynamic bar coloring
 var _boost_style:  StyleBoxFlat
@@ -770,6 +772,16 @@ func _setup_hud_refs() -> void:
 	cd_beep_sfx       = $CountdownBeepSFX
 	cd_go_sfx         = $CountdownGoSFX
 
+	# Dynamic SFX players
+	star_sfx = AudioStreamPlayer.new()
+	star_sfx.stream = load("res://audio/star_collect.wav")
+	star_sfx.volume_db = -4.0
+	add_child(star_sfx)
+	lap_sfx = AudioStreamPlayer.new()
+	lap_sfx.stream = load("res://audio/lap_ding.wav")
+	lap_sfx.volume_db = -2.0
+	add_child(lap_sfx)
+
 	# Apply bar background styles
 	boost_bar.add_theme_stylebox_override("background", _bar_bg_style)
 	hype_bar.add_theme_stylebox_override("fill",        _hype_style)
@@ -910,6 +922,7 @@ func _update_hud(delta: float) -> void:
 		var tw_lap = create_tween()
 		hud_lap.scale = Vector2(1.6, 1.6)
 		tw_lap.tween_property(hud_lap, "scale", Vector2(1.0, 1.0), 0.4).set_trans(Tween.TRANS_BOUNCE)
+		lap_sfx.play()
 		# Gold border flash
 		var flash = ColorRect.new()
 		flash.color = Color(1.0, 0.85, 0.2, 0.6)
@@ -1125,12 +1138,16 @@ func _check_player_collisions() -> void:
 					player.apply_boost()
 					_play_griddy()
 					_sparkle_at(child.position)
+					star_sfx.play()
 					_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
 					_stat_stars += 1
 			"shield":
 				if dist < 55:
 					player.has_shield = true
 					_sparkle_at(child.position)
+					star_sfx.pitch_scale = 1.3
+					star_sfx.play()
+					star_sfx.pitch_scale = 1.0
 					_hide_pickup(child, cookie_timers, COOKIE_RESPAWN_SEC)
 					_stat_stars += 1
 			"jeep":
